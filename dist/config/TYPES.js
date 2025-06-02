@@ -1,5 +1,8 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TYPES = void 0;
 // src/config/TYPES.ts
-export const TYPES = {
+exports.TYPES = {
     // Services
     IUserService: Symbol.for("IUserService"),
     PostService: Symbol.for("PostService"),
@@ -20,5 +23,9 @@ export const TYPES = {
     LikeController: Symbol.for("LikeController"),
     StoryController: Symbol.for("StoryController"),
     // Routers
-    UserRouter: Symbol.for("UserRouter")
+    UserRouter: Symbol.for("UserRouter"),
+    StoryRouter: Symbol.for("StoryRouter"),
+    PostRouter: Symbol.for("PostRouter"),
+    CommentRouter: Symbol.for("CommentRouter"),
+    LikeRouter: Symbol.for("LikeRouter"),
 };

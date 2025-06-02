@@ -1,3 +1,4 @@
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -10,51 +11,79 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { inject, injectable } from "inversify";
-import { UserProvider } from "../providers/User.provider";
-import { TYPES } from "../config/TYPES";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserController = void 0;
+const inversify_1 = require("inversify");
+const User_provider_1 = require("../providers/User.provider");
+const TYPES_1 = require("../config/TYPES");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 let UserController = class UserController {
-    userProvider;
     constructor(userProvider) {
         this.userProvider = userProvider;
     }
     // Créer un nouvel utilisateur
-    async createUser(req, res) {
-        try {
-            const user = req.body;
-            const newUser = await this.userProvider.createUser(user);
-            res.status(201).json(newUser);
-        }
-        catch (error) {
-            res.status(400).json({ message: error.message });
-        }
+    createUser(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const user = req.body;
+                const newUser = yield this.userProvider.createUser(user);
+                // Génération d'un token JWT
+                const token = jsonwebtoken_1.default.sign({ _id: newUser._id, username: newUser.username }, process.env.JWT_SECRET || "your_secret_key", { expiresIn: "1h" });
+                res.status(201).json({ message: "User registered successfully",
+                    id: newUser._id,
+                    token, });
+            }
+            catch (error) {
+                res.status(400).json({ message: error.message });
+            }
+        });
     }
     // Connexion d'un utilisateur
-    async loginUser(req, res) {
-        try {
-            const { email, password } = req.body;
-            const user = await this.userProvider.loginUser(email, password);
-            res.status(200).json(user);
-        }
-        catch (error) {
-            res.status(400).json({ message: error.message });
-        }
+    loginUser(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { email, password } = req.body;
+                const user = yield this.userProvider.loginUser(email, password);
+                // Génération d'un token JWT
+                const token = jsonwebtoken_1.default.sign({ _id: user === null || user === void 0 ? void 0 : user._id, username: user === null || user === void 0 ? void 0 : user.username }, process.env.JWT_SECRET || "your_secret_key", { expiresIn: "1h" });
+                res.status(200).json({ message: "User logged in successfully",
+                    id: user === null || user === void 0 ? void 0 : user._id,
+                    token, });
+            }
+            catch (error) {
+                res.status(400).json({ message: error.message });
+            }
+        });
     }
     // Rechercher un utilisateur par username
-    async findUserByUsername(req, res) {
-        try {
-            const { username } = req.params;
-            const users = await this.userProvider.findUserByUsername(username);
-            res.status(200).json(users);
-        }
-        catch (error) {
-            res.status(400).json({ message: error.message });
-        }
+    findUserByUsername(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { username } = req.params;
+                const users = yield this.userProvider.findUserByUsername(username);
+                res.status(200).json(users);
+            }
+            catch (error) {
+                res.status(400).json({ message: error.message });
+            }
+        });
     }
 };
-UserController = __decorate([
-    injectable(),
-    __param(0, inject(TYPES.UserProvider)),
-    __metadata("design:paramtypes", [UserProvider])
+exports.UserController = UserController;
+exports.UserController = UserController = __decorate([
+    (0, inversify_1.injectable)(),
+    __param(0, (0, inversify_1.inject)(TYPES_1.TYPES.UserProvider)),
+    __metadata("design:paramtypes", [User_provider_1.UserProvider])
 ], UserController);
-export { UserController };

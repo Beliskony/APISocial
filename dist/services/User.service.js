@@ -1,41 +1,62 @@
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-import UserModel from "../models/User.model";
-import { hash, compare } from "bcrypt";
-import { injectable } from "inversify";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserService = void 0;
+const User_model_1 = __importDefault(require("../models/User.model"));
+const bcrypt_1 = require("bcrypt");
+const inversify_1 = require("inversify");
 let UserService = class UserService {
-    async createUser(user) {
-        const existingUser = await UserModel.findOne({ $or: [{ email: user.email }, { phoneNumber: user.phoneNumber }] });
-        if (existingUser) {
-            throw new Error("Utilisateur existe deja");
-        }
-        const hashedPassword = await hash(user.password, 10);
-        const newUser = new UserModel({ ...user, password: hashedPassword });
-        return await newUser.save();
-    }
-    async loginUser(email, password) {
-        const user = await UserModel.findOne({ email });
-        if (!user) {
-            throw new Error("Utilisateur non trouve");
-        }
-        const isPasswordValid = await compare(password, user.password);
-        if (!isPasswordValid) {
-            throw new Error("Mot de passe incorrect");
-        }
-        return user;
-    }
-    async findUserByUsername(username) {
-        const user = await UserModel.find({
-            username: { $regex: username, $options: "i" }
+    createUser(user) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const existingUser = yield User_model_1.default.findOne({ $or: [{ email: user.email }, { phoneNumber: user.phoneNumber }] });
+            if (existingUser) {
+                throw new Error("Utilisateur existe deja");
+            }
+            const hashedPassword = yield (0, bcrypt_1.hash)(user.password, 10);
+            const newUser = new User_model_1.default(Object.assign(Object.assign({}, user), { password: hashedPassword }));
+            return yield newUser.save();
         });
-        return user;
+    }
+    loginUser(email, password) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = yield User_model_1.default.findOne({ email });
+            if (!user) {
+                throw new Error("Utilisateur non trouve");
+            }
+            const isPasswordValid = yield (0, bcrypt_1.compare)(password, user.password);
+            if (!isPasswordValid) {
+                throw new Error("Mot de passe incorrect");
+            }
+            return user;
+        });
+    }
+    findUserByUsername(username) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const user = yield User_model_1.default.find({
+                username: { $regex: username, $options: "i" }
+            });
+            return user;
+        });
     }
 };
-UserService = __decorate([
-    injectable()
+exports.UserService = UserService;
+exports.UserService = UserService = __decorate([
+    (0, inversify_1.injectable)()
 ], UserService);
-export { UserService };

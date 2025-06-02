@@ -1,5 +1,7 @@
-import { Schema, model } from 'mongoose';
-const commentSchema = new Schema({
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const mongoose_1 = require("mongoose");
+const commentSchema = new mongoose_1.Schema({
     user: {
         type: String,
         required: true
@@ -19,4 +21,4 @@ const commentSchema = new Schema({
 }, {
     timestamps: true,
 });
-export default model('Comment', commentSchema);
+exports.default = (0, mongoose_1.model)('Comment', commentSchema);

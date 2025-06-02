@@ -1,3 +1,4 @@
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -10,27 +11,49 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { inject, injectable } from "inversify";
-import { StoryService } from "../services/Story.service";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StoryProvider = void 0;
+const inversify_1 = require("inversify");
+const Story_service_1 = require("../services/Story.service");
+const TYPES_1 = require("../config/TYPES");
 let StoryProvider = class StoryProvider {
-    storyService;
     constructor(storyService) {
         this.storyService = storyService;
     }
-    async createStory(story) {
-        const { userId, content } = story;
-        return this.storyService.createStory(userId, story.content.type, story.content.data);
+    createStory(story) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const { userId, content } = story;
+            return this.storyService.createStory(userId, story.content);
+        });
     }
-    async getUserStories(userId) {
-        return this.storyService.getUserStories(userId);
+    getUserStories(userId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.storyService.getUserStories(userId);
+        });
     }
-    async deleteExpiredStories(storyId) {
-        return this.storyService.deleteExpiredStories();
+    deleteExpiredStories() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.storyService.deleteExpiredStories();
+        });
+    }
+    deleteUserStory(storyId, userId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return this.storyService.deleteUserStory(storyId, userId);
+        });
     }
 };
-StoryProvider = __decorate([
-    injectable(),
-    __param(0, inject(StoryService)),
-    __metadata("design:paramtypes", [StoryService])
+exports.StoryProvider = StoryProvider;
+exports.StoryProvider = StoryProvider = __decorate([
+    (0, inversify_1.injectable)(),
+    __param(0, (0, inversify_1.inject)(TYPES_1.TYPES.StoryService)),
+    __metadata("design:paramtypes", [Story_service_1.StoryService])
 ], StoryProvider);
-export { StoryProvider };

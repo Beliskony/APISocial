@@ -1,17 +1,17 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IUser extends Document {
-    id: string; 
+export interface IUser extends Document { 
+    _id: string;
     username: string;
     email: string;
     password: string;
     profilePicture?: string;
     phoneNumber?: string;
-    followers: mongoose.Types.ObjectId[];
+    followers?: mongoose.Types.ObjectId[];
     otp?: string;
     otpExpires?:number;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 const UserSchema: Schema = new Schema(

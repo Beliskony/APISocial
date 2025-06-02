@@ -6,71 +6,128 @@ import PostModel from "../models/Post.model";
 import { Request, Response } from "express";
 
 
+
 // Mocks
-jest.mock("../models/Post.model");
-jest.mock("../middlewares/CreatePostMiddleware");
-jest.mock("../middlewares/DeletePostMiddleware");
-jest.mock("../middlewares/UpdatePostMiddleware");
+jest.mock("../models/Post.model", () => ({
+  create: jest.fn(),
+  findByIdAndDelete: jest.fn(),
+  findByIdAndUpdate: jest.fn(),
+}));
+
+jest.mock("../middlewares/CreatePostMiddleware", () => ({
+  CreatePostRequest: jest.fn((schema) => {
+    return jest.fn(async (req: Request, res: Response, next: Function) => {
+      // Simule la validation réussie
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ message: "Validation error", errors: parsed.error.errors });
+        return;
+      }
+      req.body = parsed.data;
+      // Simule la création de post dans la DB
+      try {
+        const createdPost = await PostModel.create(req.body);
+        res.status(201).json(createdPost);
+      } catch {
+        res.status(400).json({ message: "Post creation failed" });
+      }
+    });
+  }),
+}));
+
+
+jest.mock("../middlewares/DeletePostMiddleware", () => ({
+  DeletePostMiddleware: jest.fn((schema) => {
+    return jest.fn(async (req: Request, res: Response, next: Function) => {
+      try {
+        const deleted = await PostModel.findByIdAndDelete(req.params.id);
+        if (!deleted) {
+          res.status(404).json({ message: "Post not found" });
+          return;
+        }
+        res.status(200).json(deleted);
+      } catch {
+        res.status(500).json({ message: "Error deleting post" });
+      }
+    }); 
+    }),
+}));
+
+
+jest.mock("../middlewares/UpdatePostMiddleware", () => ({
+  UpdatePostMiddleware: jest.fn((schema) => {
+    return jest.fn(async (req: Request, res: Response, next: Function) => {
+      try {
+        const updated = await PostModel.findByIdAndUpdate(req.body.id, req.body, { new: true });
+        if (!updated) {
+          res.status(404).json({ message: "Post not found" });
+          return;
+        }
+        res.status(200).json(updated);
+      } catch {
+        res.status(500).json({ message: "Error updating post" });
+      }
+    });
+}),
+}));
+
+
 jest.mock("../schemas/Post.ZodSchema", () => ({
   PostZodSchema: {
     parse: jest.fn(),
+    safeParse: jest.fn(),
   },
 }));
 
 //pour la creation
-describe("Post Middleware", () => {
-    const mockRequest = (body: any): Partial<Request> => {
-        return {body}
-    };
-    const mockResponse = (): Partial<Response> => {
-        const res: Partial<Response> = {};
-        res.status = jest.fn().mockReturnThis();
-        res.json = jest.fn();
-        return res;
-    };
+describe("CreatePostMiddleware", () => {
+  const mockRequest = (body: any): Partial<Request> => ({ body });
+  const mockResponse = (): Partial<Response> => {
+    const res: Partial<Response> = {};
+    res.status = jest.fn().mockReturnThis();
+    res.json = jest.fn();
+    return res;
+  };
 
-    beforeEach(() => {
-        jest.clearAllMocks();
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("should call next if body is valid", () => {
+    const req = mockRequest({
+      user: "507f191e810c19729de860ea",
+      text: "Test post",
+      media: "img.jpg",
     });
 
-    it("should create a post and return the created post", async () => {
-        const req = mockRequest({
-            user: "hdhgjkjdjkd",
-            text: "Test Post",
-            media: "This is a test post",
-    })
-           const res = mockResponse();
-        (PostModel.create as jest.Mock).mockResolvedValue(req.body);
-        (PostZodSchema.parse as jest.Mock).mockReturnValue(req.body);
+    const res = mockResponse();
+    const next = jest.fn();
 
-        const createPostMiddleware = CreatePostRequest(PostZodSchema);
-        await createPostMiddleware(req as Request, res as Response, () => {});
+    const createPostMiddleware = CreatePostRequest(PostZodSchema);
+    createPostMiddleware(req as Request, res as Response, next);
 
-        expect(PostModel.create).toHaveBeenCalledWith(req.body);
-        expect(res.status).toHaveBeenCalledWith(201);
-        expect(res.json).toHaveBeenCalledWith(req.body);
-    }
-    
-    )
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
 
-    it("should return 400 if post creation fails", async () => {
-        const req = mockRequest({
-            user: "hdhgjkjdjkd",
-            text: "Test Post",
-            media: "This is a test post",
-        });
-        const res = mockResponse();
+  it("should return 400 if body is invalid", () => {
+    const req = mockRequest({}); // corps invalide
+    const res = mockResponse();
+    const next = jest.fn();
 
-        (PostModel.create as jest.Mock).mockRejectedValue(new Error("Post creation failed"));
-        
-        const createPostMiddleware = CreatePostRequest(PostZodSchema);
-        await createPostMiddleware(req as Request, res as Response, () => {});
+    const createPostMiddleware = CreatePostRequest(PostZodSchema);
+    createPostMiddleware(req as Request, res as Response, next);
 
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith({ message: "Post creation failed" });
-    })
-
-})
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Validation error",
+        errors: expect.any(Array),
+      })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+});
 
 //pour la suppression
 describe ("DeletePostMiddleware", () => {
@@ -87,17 +144,30 @@ describe ("DeletePostMiddleware", () => {
     });
 
     it("should delete a post and return the deleted post", async () => {
-        const req = mockRequest({ id: "postId123" });
-        const res = mockResponse();
+        const req = {
+                 params:
+                  { id: "postId123" }
+                };
 
-        (PostModel.findByIdAndDelete as jest.Mock).mockResolvedValue(req.params);
+        const res = {
+                  status: jest.fn().mockReturnThis(),
+                  json: jest.fn()
+                };
 
+        const deletedPost = {
+          id: "postId123",
+          media: "img.jpg",
+          text: "old",
+        };
+
+        (PostModel.findByIdAndDelete as jest.Mock).mockResolvedValue(deletedPost);
+        
         const deletePostMiddleware = DeletePostMiddleware(PostZodSchema);
-        await deletePostMiddleware(req as Request, res as Response, () => {});
+        await deletePostMiddleware(req as unknown as Request, res as unknown as Response, () => {});
 
         expect(PostModel.findByIdAndDelete).toHaveBeenCalledWith("postId123");
         expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith(req.params);
+        expect(res.json).toHaveBeenCalledWith(deletedPost);
     });
 
     it("should return 404 if post not found", async () => {

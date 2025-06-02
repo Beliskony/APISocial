@@ -1,3 +1,4 @@
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -10,32 +11,53 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { inject, injectable } from "inversify";
-import { CommentService } from "../services/comment.service";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CommentProvider = void 0;
+const inversify_1 = require("inversify");
+const comment_service_1 = require("../services/comment.service");
+const TYPES_1 = require("../config/TYPES");
 let CommentProvider = class CommentProvider {
-    commentService;
     constructor(commentService) {
         this.commentService = commentService;
     }
-    async addComment(postId, userId, content) {
-        return await this.commentService.addComment(postId, userId, content);
+    addComment(postId, userId, content) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.commentService.addComment(postId, userId, content);
+        });
     }
-    async getCommentsByPostId(postId) {
-        return await this.commentService.getCommentsByPostId(postId);
+    getCommentsByPostId(postId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.commentService.getCommentsByPostId(postId);
+        });
     }
-    async updateComment(commentId, userId, content, newContent) {
-        return await this.commentService.updateComment(commentId, userId, content, newContent);
+    updateComment(commentId, userId, content, newContent) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.commentService.updateComment(commentId, userId, content, newContent);
+        });
     }
-    async deleteComment(commentId, userId) {
-        return await this.commentService.deleteComment(commentId, userId);
+    deleteComment(commentId, userId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.commentService.deleteComment(commentId, userId);
+        });
     }
-    async getCommentsByPost(postId) {
-        return await this.commentService.getCommentsByPost(postId);
+    getCommentsByPost(postId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.commentService.getCommentsByPost(postId);
+        });
     }
 };
-CommentProvider = __decorate([
-    injectable(),
-    __param(0, inject(CommentService)),
-    __metadata("design:paramtypes", [CommentService])
+exports.CommentProvider = CommentProvider;
+exports.CommentProvider = CommentProvider = __decorate([
+    (0, inversify_1.injectable)(),
+    __param(0, (0, inversify_1.inject)(TYPES_1.TYPES.CommentService)),
+    __metadata("design:paramtypes", [comment_service_1.CommentService])
 ], CommentProvider);
-export { CommentProvider };

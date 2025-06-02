@@ -21,8 +21,8 @@ export class UserController {
                 { expiresIn: "1h" }
             );
 
-            res.status(201).json({message: "User registered successfully",
-                id: newUser._id,
+            res.status(201).json({message: "Utilisateur enregistré avec succès",
+                id: newUser._id.toString(),
                 token,});
         } catch (error: any) {
             res.status(400).json({ message: error.message });

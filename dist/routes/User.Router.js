@@ -1,3 +1,4 @@
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -10,29 +11,29 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { Router } from "express";
-import { UserController } from "../controllers/userController";
-import { validateRequest } from "../middlewares/userMiddleware";
-import { UserZodSchema, LoginZodSchema } from "../schemas/User.ZodSchema";
-import { inject, injectable } from "inversify";
-import { TYPES } from "../config/TYPES";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserRouter = void 0;
+const express_1 = require("express");
+const userController_1 = require("../controllers/userController");
+const auth_1 = require("../middlewares/auth");
+const User_ZodSchema_1 = require("../schemas/User.ZodSchema");
+const inversify_1 = require("inversify");
+const TYPES_1 = require("../config/TYPES");
 let UserRouter = class UserRouter {
-    router;
-    userController;
     constructor(userController) {
-        this.router = Router();
+        this.router = (0, express_1.Router)();
         this.userController = userController;
         this.initializeRoutes();
     }
     initializeRoutes() {
         this.router.get("/search/:username", this.userController.findUserByUsername.bind(this.userController));
-        this.router.post("/register", validateRequest(UserZodSchema), this.userController.createUser.bind(this.userController));
-        this.router.post("/login", validateRequest(LoginZodSchema), this.userController.loginUser.bind(this.userController));
+        this.router.post("/register", (0, auth_1.registerUser)(User_ZodSchema_1.UserZodSchema), this.userController.createUser.bind(this.userController));
+        this.router.post("/login", (0, auth_1.loginUser)(User_ZodSchema_1.LoginZodSchema), this.userController.loginUser.bind(this.userController));
     }
 };
-UserRouter = __decorate([
-    injectable(),
-    __param(0, inject(TYPES.UserController)),
-    __metadata("design:paramtypes", [UserController])
+exports.UserRouter = UserRouter;
+exports.UserRouter = UserRouter = __decorate([
+    (0, inversify_1.injectable)(),
+    __param(0, (0, inversify_1.inject)(TYPES_1.TYPES.UserController)),
+    __metadata("design:paramtypes", [userController_1.UserController])
 ], UserRouter);
-export { UserRouter };

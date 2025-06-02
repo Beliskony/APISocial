@@ -1,3 +1,4 @@
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -10,106 +11,80 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-import { inject, injectable } from 'inversify';
-import { LikeProvider } from '../providers/Like.provider';
-{ /* // Ajouter un like
-export const addLike = async (req: Request, res: Response) => {
-    try {
-        const { userId, postId } = req.body;
-
-        const existingLike = await LikeModel.findOne({ userId, postId });
-        if (existingLike) {
-            return res.status(400).json({ message: 'Like already exists' });
-        }
-
-        const newLike = new LikeModel({ userId, postId });
-        await newLike.save();
-
-        res.status(201).json({ message: 'Like added successfully', like: newLike });
-    } catch (error) {
-        res.status(500).json({ message: 'Error adding like', error });
-    }
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
 };
-
-// Supprimer un like
-export const removeLike = async (req: Request, res: Response) => {
-    try {
-        const { userId, postId } = req.body;
-
-        const like = await LikeModel.findOneAndDelete({ userId, postId });
-        if (!like) {
-            return res.status(404).json({ message: 'Like not found' });
-        }
-
-        res.status(200).json({ message: 'Like removed successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Error removing like', error });
-    }
-};
-
-// Obtenir tous les likes pour un post
-export const getLikesForPost = async (req: Request, res: Response) => {
-    try {
-        const { postId } = req.params;
-
-        const likes = await LikeModel.find({ postId });
-        res.status(200).json({ likes });
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching likes', error });
-    }
-};*/
-}
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.LikeController = void 0;
+const inversify_1 = require("inversify");
+const Like_provider_1 = require("../providers/Like.provider");
+const TYPES_1 = require("../config/TYPES");
 let LikeController = class LikeController {
-    likeProvider;
     constructor(likeProvider) {
         this.likeProvider = likeProvider;
     }
-    async addLike(req, res) {
-        try {
-            const { userId, postId } = req.body;
-            const existingLike = await this.likeProvider.hasUserLiked(userId, postId);
-            if (existingLike) {
-                return res.status(400).json({ message: 'Like already exists' });
+    addLike(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { userId, postId } = req.body;
+                const existingLike = yield this.likeProvider.hasUserLiked(userId, postId);
+                if (existingLike) {
+                    res.status(400).json({ message: 'Like already exists' });
+                }
+                yield this.likeProvider.addLike(userId, postId);
+                res.status(201).json({ message: 'Like added successfully' });
             }
-        }
-        catch (error) {
-            return res.status(500).json({ message: 'Error checking like', error });
-        }
+            catch (error) {
+                res.status(500).json({ message: 'Error checking like', error });
+            }
+        });
     }
-    async removeLike(req, res) {
-        try {
-            const { userId, postId } = req.body;
-            await this.likeProvider.removeLike(userId, postId);
-            res.status(200).json({ message: 'Like removed successfully' });
-        }
-        catch (error) {
-            res.status(500).json({ message: 'Error removing like', error });
-        }
+    removeLike(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { userId, postId } = req.body;
+                yield this.likeProvider.removeLike(userId, postId);
+                res.status(200).json({ message: 'Like removed successfully' });
+            }
+            catch (error) {
+                res.status(500).json({ message: 'Error removing like', error });
+            }
+        });
     }
-    async getLikesForPost(req, res) {
-        try {
-            const { postId } = req.params;
-            const likes = await this.likeProvider.getLikesByPost(postId);
-            res.status(200).json({ likes });
-        }
-        catch (error) {
-            res.status(500).json({ message: 'Error fetching likes', error });
-        }
+    getLikesForPost(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { postId } = req.params;
+                const likes = yield this.likeProvider.getLikesByPost(postId);
+                res.status(200).json({ likes });
+            }
+            catch (error) {
+                res.status(500).json({ message: 'Error fetching likes', error });
+            }
+        });
     }
-    async hasUserLiked(req, res) {
-        try {
-            const { userId, postId } = req.body;
-            const hasLiked = await this.likeProvider.hasUserLiked(userId, postId);
-            res.status(200).json({ hasLiked });
-        }
-        catch (error) {
-            res.status(500).json({ message: 'Error checking like', error });
-        }
+    hasUserLiked(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const { userId, postId } = req.body;
+                const hasLiked = yield this.likeProvider.hasUserLiked(userId, postId);
+                res.status(200).json({ hasLiked });
+            }
+            catch (error) {
+                res.status(500).json({ message: 'Error checking like', error });
+            }
+        });
     }
 };
-LikeController = __decorate([
-    injectable(),
-    __param(0, inject(LikeProvider)),
-    __metadata("design:paramtypes", [LikeProvider])
+exports.LikeController = LikeController;
+exports.LikeController = LikeController = __decorate([
+    (0, inversify_1.injectable)(),
+    __param(0, (0, inversify_1.inject)(TYPES_1.TYPES.LikeProvider)),
+    __metadata("design:paramtypes", [Like_provider_1.LikeProvider])
 ], LikeController);
-export { LikeController };

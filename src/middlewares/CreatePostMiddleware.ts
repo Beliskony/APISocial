@@ -4,9 +4,10 @@ import { ZodSchema } from "zod";
 export const CreatePostRequest = (schema: ZodSchema) => {
     return (req: Request, res: Response, next: NextFunction) => {
         const result = schema.safeParse(req.body);
+       
         if (!result.success) {
-           res.status(400).json({ 
-                message: "Validation error", 
+           res.status(500).json({ 
+                message: "Erreur de creation du post", 
                 errors: result.error.errors 
             });
             return;

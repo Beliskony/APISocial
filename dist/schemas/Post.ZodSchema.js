@@ -1,13 +1,15 @@
-import { z } from "zod";
-export const PostZodValidator = z.object({
-    user: z.string().nonempty("User ID is required"), // Assuming ObjectId is represented as a string
-    text: z.string().optional(), // Optional text field with a maximum length of 500 characters,
-    media: z
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.PostZodSchema = void 0;
+const zod_1 = require("zod");
+exports.PostZodSchema = zod_1.z.object({
+    text: zod_1.z.string().max(500, "Le texte doit contenir maxi 500 caractere").optional(), // Optional text field with a maximum length of 500 characters,
+    media: zod_1.z
         .object({
-        images: z.array(z.string().url().trim()).optional(),
-        videos: z.array(z.string().url().trim()).optional(),
+        images: zod_1.z.array(zod_1.z.string().url().trim()).max(5).optional(),
+        videos: zod_1.z.array(zod_1.z.string().url().trim()).max(2).optional(),
     })
         .optional(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
+    createdAt: zod_1.z.date().optional(),
+    updatedAt: zod_1.z.date().optional(),
 });

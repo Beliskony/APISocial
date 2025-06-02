@@ -21,14 +21,9 @@ export const UserZodSchema = z.object({
 
 
 export const LoginZodSchema = z.object({
-    email: z.string().email().trim().toLowerCase().optional(),
-    username: z.string().optional(),
-    contact: z.string().optional(),
+    email: z.string().email().trim().toLowerCase(),
     password: z.string().min(8, "Password must be at least 8 characters long"),
-}).refine(data => data.email || data.username || data.contact, {
-    message: "Email, username, or contact is required",
-    path: ["email"]
-});
+})
 
 
 

@@ -1,20 +1,32 @@
-const storyMiddleware = (req, res, next) => {
-    try {
-        // Example: Check if the story data exists in the request body
-        const { title, content } = req.body;
-        if (!title || !content) {
-            return res.status(400).json({ message: 'Title and content are required for the story.' });
-        }
-        // Perform additional validation or processing if needed
-        // Example: Limit the title length
-        if (title.length > 100) {
-            return res.status(400).json({ message: 'Title cannot exceed 100 characters.' });
-        }
-        // If everything is valid, proceed to the next middleware or route handler
-        next();
-    }
-    catch (error) {
-        res.status(500).json({ message: 'An error occurred in the story middleware.', error });
-    }
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
 };
-export default storyMiddleware;
+Object.defineProperty(exports, "__esModule", { value: true });
+const StoryMiddleware = (schema) => {
+    return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+        try {
+            if (['POST', 'Delete'].includes(req.method.toUpperCase())) {
+                yield schema.parseAsync(req.body);
+            }
+            else if (req.method === 'GET') {
+                yield schema.parseAsync(req.query);
+            }
+            next();
+        }
+        catch (error) {
+            res.status(400).json({
+                message: 'Validation error',
+                detail: error instanceof Error ? error.message : error,
+            });
+        }
+        ;
+    });
+};
+exports.default = StoryMiddleware;
