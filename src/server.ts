@@ -38,7 +38,7 @@ app.use("/api/comment", commentRouter.router);
 const startServer = async () => {
   try {
     await connectDB();
-    const PORT = process.env.PORT || 5000;
+    const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
       console.log(`🚀 Serveur lancé sur le port ${PORT}`);
     });
