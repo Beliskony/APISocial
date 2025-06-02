@@ -44,27 +44,30 @@ describe('UserController - createUser', () => {
         expect(res.json).toHaveBeenCalledWith({ message: 'User creation failed' });
     }));
     it('should create a user and return token and user ID', () => __awaiter(void 0, void 0, void 0, function* () {
-        const req = mockRequest({
+        const reqBody = {
             username: 'testuser',
             password: 'password123',
             email: 'test@example.com',
-            phoneNumber: '+1234567890',
-        });
+            phoneNumber: '0788557270',
+        };
+        const createdUser = {
+            _id: '507f191e810c19729de860ea',
+            username: 'testuser',
+            password: 'password123',
+            email: 'test@example.com',
+            phoneNumber: '0788557270',
+        };
+        const req = mockRequest(reqBody);
         const res = mockResponse();
-        userProvider.createUser.mockResolvedValue(req.body);
+        userProvider.createUser.mockResolvedValue(createdUser);
         jsonwebtoken_1.default.sign.mockReturnValue('mockedToken');
         yield userController.createUser(req, res);
-        expect(userProvider.createUser).toHaveBeenCalledWith({
-            username: 'testuser',
-            password: 'password123',
-            email: 'test@example.com',
-            phoneNumber: '+1234567890',
-        });
-        expect(jsonwebtoken_1.default.sign).toHaveBeenCalledWith({ _id: 'userId123', username: 'testuser' }, expect.any(String), { expiresIn: '1h' });
+        expect(userProvider.createUser).toHaveBeenCalledWith(reqBody);
+        expect(jsonwebtoken_1.default.sign).toHaveBeenCalledWith({ _id: createdUser._id.toString(), username: createdUser.username }, expect.any(String), { expiresIn: '1h' });
         expect(res.status).toHaveBeenCalledWith(201);
         expect(res.json).toHaveBeenCalledWith({
             message: 'Utilisateur enregistré avec succès',
-            id: 'userId123',
+            id: createdUser._id.toString(),
             token: 'mockedToken',
         });
     }));

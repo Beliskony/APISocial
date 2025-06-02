@@ -1,8 +1,7 @@
 import { loginUser } from '../middlewares/auth';
 import { LoginZodSchema } from '../schemas/User.ZodSchema';
 import { UserController } from '../controllers/userController';
-import UserModel from '../models/User.model';
-import bcrypt from 'bcrypt';
+
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 

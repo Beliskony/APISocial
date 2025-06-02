@@ -41,8 +41,8 @@ let UserController = class UserController {
                 const newUser = yield this.userProvider.createUser(user);
                 // Génération d'un token JWT
                 const token = jsonwebtoken_1.default.sign({ _id: newUser._id, username: newUser.username }, process.env.JWT_SECRET || "your_secret_key", { expiresIn: "1h" });
-                res.status(201).json({ message: "User registered successfully",
-                    id: newUser._id,
+                res.status(201).json({ message: "Utilisateur enregistré avec succès",
+                    id: newUser._id.toString(),
                     token, });
             }
             catch (error) {

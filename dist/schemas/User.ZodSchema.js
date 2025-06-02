@@ -18,11 +18,6 @@ exports.UserZodSchema = zod_1.z.object({
     createdAt: zod_1.z.date().optional(), // Date of account creation (optional for validation)
 });
 exports.LoginZodSchema = zod_1.z.object({
-    email: zod_1.z.string().email().trim().toLowerCase().optional(),
-    username: zod_1.z.string().optional(),
-    contact: zod_1.z.string().optional(),
+    email: zod_1.z.string().email().trim().toLowerCase(),
     password: zod_1.z.string().min(8, "Password must be at least 8 characters long"),
-}).refine(data => data.email || data.username || data.contact, {
-    message: "Email, username, or contact is required",
-    path: ["email"]
 });

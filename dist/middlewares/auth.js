@@ -19,6 +19,7 @@ const loginUser = (schema) => {
     return (req, res, next) => {
         try {
             schema.parse(req.body); // Valider les données de connexion
+            res.status(200).json({ message: 'User logged in successfully' });
             next(); // Passer au contrôleur si les données sont valides
         }
         catch (error) {

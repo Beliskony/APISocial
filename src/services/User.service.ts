@@ -1,5 +1,5 @@
 import UserModel, { IUser } from "../models/User.model";
-import { hash, compare } from "bcrypt";
+import { hash, compare } from "bcryptjs";
 import {injectable} from "inversify";
 
 

@@ -37,7 +37,7 @@ let PostController = class PostController {
                 res.status(201).json(post);
             }
             catch (error) {
-                res.status(500).json({ message: 'Error creating post', error });
+                res.status(500).json({ message: 'Erreur de creation du post', error });
             }
         });
     }
