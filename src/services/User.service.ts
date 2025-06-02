@@ -39,10 +39,7 @@ async createUser (user: IUser): Promise<IUser> {
 }
 
 async findUserByUsername (username: string): Promise<IUser[]> {
-    const user = await UserModel.find ({
-        username: {$regex: username, $options: "i"}
-    })
-
+    const user = await UserModel.find ({ username: {$regex: username, $options: "i"} }).select("-password -phonNumber")
     return user
 }
 }
