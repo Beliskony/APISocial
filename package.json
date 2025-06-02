@@ -1,10 +1,10 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "server.ts",
+  "main": "dist/server.js",
   "scripts": {
     "test": "jest",
-    "build": "npx tsc",
+    "build": "tsc",
     "start": "node dist/server.js",
     "start:dev": "nodemon src/server.ts"
   },
