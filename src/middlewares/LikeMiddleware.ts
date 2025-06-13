@@ -9,6 +9,7 @@ export const LikeRequest = (schema: ZodSchema) => {
                 message: "Validation error", 
                 errors: result.error.errors 
             });
+            return;
         }
         req.body = result.data; // Update req.body with parsed data
         next();

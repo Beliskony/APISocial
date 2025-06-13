@@ -26,7 +26,7 @@ const StorySchema: Schema = new Schema<IStory>({
     expiresAt: { type: Date, required: true, default: () => new Date(Date.now() + 24 * 60 * 60 * 1000) }, // 24h après la création
 });
 
-// Optionnel : Ajouter un index pour supprimer automatiquement les stories expirées
+// Ajouter un index pour supprimer automatiquement les stories expirées
 StorySchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model<IStory>('Story', StorySchema);

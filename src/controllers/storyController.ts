@@ -10,7 +10,7 @@ export class StoryController {
   async createStory(req: Request, res: Response) {
     try {
         const userId = req.params.userId;
-        const content = req.body.content; // Assuming content is passed in the request body
+        const content = req.body.content; 
         const story = await this.storyProvider.createStory({ userId, content });
         res.status(201).json(story);
         return
@@ -35,20 +35,20 @@ export class StoryController {
 
   async deleteExpiredStories(req: Request, res: Response) {
    await this.storyProvider.deleteExpiredStories();
-    res.status(204).send(); // No content
+    res.status(204).send(); // Sans contenu
   }
 
   async deleteUserStory(req: Request, res: Response) {
     try {
         const { storyId } = req.params;
-        const userId = req.params.userId; // Assuming userId is passed in the request params
+        const userId = req.params.userId; 
 
         if (!userId) {
             return res.status(401).json({ message: "Utilisateur non authentifié" });
         }
 
         await this.storyProvider.deleteUserStory(storyId, userId);
-        res.status(204).send(); // No content
+        res.status(204).send(); // Sans contenu
     } catch (error) {
         console.error("Erreur lors de la suppression de la story:", error);
         res.status(500).json({ message: "Erreur lors de la suppression de la story" });

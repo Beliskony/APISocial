@@ -13,7 +13,8 @@ export class LikeController {
              const existingLike = await this.likeProvider.hasUserLiked(userId, postId);
 
              if (existingLike) {
-                  res.status(400).json({ message: 'Like already exists' });
+                res.status(400).json({ message: 'Like already exists' });
+                return;
              }
              await this.likeProvider.addLike(userId, postId);
              res.status(201).json({ message: 'Like added successfully' });
@@ -36,7 +37,9 @@ export class LikeController {
         try {
             const { postId } = req.params;
             const likes = await this.likeProvider.getLikesByPost(postId);
-            res.status(200).json({ likes });
+            res.status(200).json({ 
+                likeCount: likes.length,
+                likes });
         } catch (error) {
             res.status(500).json({ message: 'Error fetching likes', error });
         }

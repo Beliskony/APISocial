@@ -54,11 +54,17 @@ export class UserController {
         try {
             const { username } = req.params;
             const users = await this.userProvider.findUserByUsername(username);
+            const safeUser = users.map(user => {
+                const { password, phoneNumber, email, ...safeUser} = user.toObject();
+                return safeUser;
+            })
             res.status(200).json(users);
         } catch (error: any) {
             res.status(400).json({ message: error.message });
         }
     }
+
+    
 
 }
     

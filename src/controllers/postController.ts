@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import { PostService } from '../services/Post.service';
 import { inject } from 'inversify';
 import { PostProvider } from '../providers/Post.provider';
 import { IPost } from '../models/Post.model';
@@ -35,6 +34,16 @@ export class PostController {
              res.status(200).json(posts);
         } catch (error) {
              res.status(500).json({ message: 'Error fetching posts', error });
+        }
+    }
+
+    async getPostsByUser(req: Request, res: Response): Promise<void> {
+        try {
+          const {userId} = req.params;
+          const posts = await this.postProvider.getPostsByUser(userId);
+          res.status(200).json(posts);
+        } catch (error) {
+          res.status(500).json({ message: 'Error fetching user posts', error})
         }
     }
 

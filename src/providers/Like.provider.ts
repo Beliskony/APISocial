@@ -8,11 +8,11 @@ import { TYPES } from "../config/TYPES";
 export class LikeProvider {
     constructor( @inject(TYPES.LikeService) private likeService: LikeService) {}
 
-    async addLike(userId: string, postId: string): Promise<void> {
+    async addLike(userId: string, postId: string): Promise<boolean> {
         return this.likeService.addLike(userId, postId);
     }
 
-    async removeLike(userId: string, postId: string): Promise<void> {
+    async removeLike(userId: string, postId: string): Promise<boolean> {
         return this.likeService.removeLike(userId, postId);
     }
 

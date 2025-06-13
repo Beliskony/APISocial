@@ -3,7 +3,7 @@ import LikeModel, {ILike} from "../models/Like.model";
 
 @injectable()
 export class LikeService {
-    async addLike(userId: string, postId: string, isLiked=true): Promise<void> {
+    async addLike(userId: string, postId: string, isLiked=true): Promise<boolean> {
         try {
             const existingLike = await LikeModel.findOne({ userId, postId });
             if (existingLike) {
@@ -13,14 +13,25 @@ export class LikeService {
                     const newLike = new LikeModel({ userId, postId, isLiked });
                     await newLike.save();
                 }
+                return true;
             }
          catch (error) {
             throw new Error(`Error adding like: ${error}`);
         } 
     }
       
-    async removeLike(userId: string, postId: string): Promise<void> {
-        await LikeModel.deleteOne({ userId, postId });
+    async removeLike(userId: string, postId: string): Promise<boolean> {
+        try {
+            const result = await LikeModel.deleteOne({ userId, postId });
+            return result.deletedCount > 0
+        } catch (error) {
+            if(error instanceof Error) {
+                throw new Error(`Erreur dislike: ${error.message}`)
+            }
+            
+            throw new Error
+        }
+        
         
     }
 
@@ -30,11 +41,8 @@ export class LikeService {
     }
 
     async hasUserLiked(userId: string, postId: string): Promise<boolean> {
-        const like = await LikeModel.findOne({ userId, postId });
+        const like = await LikeModel.findOne({ userId, postId, isLiked:true });
         return !!like;
     }
 }
 
-
-export default new LikeService();
-//compare ce snippet avec celui de Like.model.ts

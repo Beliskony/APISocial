@@ -15,6 +15,10 @@ export class PostProvider {
         return this.postService.getPosts(text);
     }
 
+    async getPostsByUser(UserId: string): Promise<IPost[]> {
+        return this.postService.getPostByUser(UserId);
+    }
+
     async getAllPosts(): Promise<IPost[] | null> {
         return this.postService.getAllPosts();
     }

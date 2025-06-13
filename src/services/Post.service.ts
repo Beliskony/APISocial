@@ -27,6 +27,10 @@ export class PostService {
         }).populate('userId')
     }
 
+    async getPostByUser(userId: string): Promise<IPost[]> {
+        return await PostModel.find({user: userId}).sort({createdAt: -1}).exec();
+    }
+
     async getAllPosts(): Promise<IPost[]> {
         return await PostModel.find().populate('userId').sort({ createdAt: -1 }).exec();
     }

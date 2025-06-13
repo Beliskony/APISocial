@@ -39,7 +39,28 @@ async createUser (user: IUser): Promise<IUser> {
 }
 
 async findUserByUsername (username: string): Promise<IUser[]> {
-    const user = await UserModel.find ({ username: {$regex: username, $options: "i"} }).select("-password -phonNumber")
+    const user = await UserModel.find ({ username: {$regex: username, $options: "i"} }).select("-password -phoneNumber -email").populate('posts')
     return user
 }
+
+async toggleFollow(userId: string, targetId: string): Promise<"followed" | "unfollowed"> {
+    if (userId === targetId) throw new Error("Impossible de se suivre soi-même");
+    const target = await UserModel.findById(targetId);
+    if (!target) throw new Error("Utilisateur introuvable");
+
+    const alreadyFollowing = target.followers?.some(followerId => followerId.toString() === userId);
+
+    if (alreadyFollowing) {
+        // Unfollow
+        target.followers = target.followers?.filter(followerId => followerId.toString() !== userId) || [];
+        await target.save();
+        return "unfollowed";
+    } else {
+        // Follow
+        target.followers?.push(userId as any);
+        await target.save();
+        return "followed";
+    }
+}
+
 }
