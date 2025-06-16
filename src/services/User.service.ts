@@ -3,9 +3,10 @@ import { hash, compare } from "bcryptjs";
 import {injectable} from "inversify";
 
 
+
 export interface IUserService {
     createUser(user: IUser): Promise<IUser>;
-    loginUser(email: string, password: string): Promise<IUser | null>;
+    loginUser(params: {identifiant: string; password: string}): Promise<IUser | null>;
     findUserByUsername(username: string): Promise<IUser[]>;
 }
 
@@ -24,8 +25,15 @@ async createUser (user: IUser): Promise<IUser> {
 }
 
 
- async loginUser (email : string, password: string): Promise<IUser | null> {
-    const user = await UserModel.findOne({ email});
+ async loginUser (params: {identifiant: string, password: string}): Promise<IUser | null> {
+    const { identifiant, password } = params;
+
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifiant);
+    const isPhone = /^(\+?\d{10,20})$/.test(identifiant);
+
+     const searchCriteria = isEmail ? { email: identifiant } : { phoneNumber: identifiant };
+    
+    const user = await UserModel.findOne( searchCriteria ).select("-phoneNumber -email").populate('posts');
     if (!user){
         throw new Error("Utilisateur non trouve");
     }
@@ -62,5 +70,29 @@ async toggleFollow(userId: string, targetId: string): Promise<"followed" | "unfo
         return "followed";
     }
 }
+
+//mettre à jour le profil de l'utilisateur
+async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<IUser> {
+     const allowFields = ['username', 'profilePicture', 'email', 'phoneNumber', 'password'];
+
+     const updateFields: Partial<IUser> = {};
+    for (const key of allowFields) {
+        if (key in updateData) {
+            if (key === 'password' && typeof updateData.password === 'string') {
+                updateData.password = await hash(updateData.password, 10);
+        } else {
+            updateFields[key as keyof IUser] = updateData[key as keyof IUser];
+     }
+        }
+    }
+
+    const updatedUser = await UserModel.findByIdAndUpdate(userId, {$set: updateFields}, { new: true, runValidators: true });
+
+    if (!updatedUser) {
+        throw new Error("Utilisateur non trouve");
+    }
+
+    return updatedUser;
+  }
 
 }

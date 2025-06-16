@@ -1,18 +1,16 @@
 import { UserController } from '../controllers/userController';
 import { UserProvider } from '../providers/User.provider';
 import { Request, Response } from 'express';
-import { UserService } from '../services/User.service';
 import { IUser } from '../models/User.model';
 import jwt from 'jsonwebtoken';
 
-
-
-// Mocks
 jest.mock('../providers/User.provider');
 jest.mock('jsonwebtoken');
-jest.mock('bcrypt');
 
 describe('UserController - createUser', () => {
+  let userController: UserController;
+  let userProvider: jest.Mocked<UserProvider>;
+
   const mockRequest = (body: any): Partial<Request> => ({ body });
   const mockResponse = (): Partial<Response> => {
     const res: Partial<Response> = {};
@@ -21,13 +19,9 @@ describe('UserController - createUser', () => {
     return res;
   };
 
-  let userController: UserController;
-  let userProvider: jest.Mocked<UserProvider>;
-
   beforeEach(() => {
     jest.clearAllMocks();
-    const mockUserService = {} as jest.Mocked<UserService>;
-    userProvider = new UserProvider(mockUserService) as jest.Mocked<UserProvider>;
+    userProvider = new UserProvider({} as any) as jest.Mocked<UserProvider>;
     userController = new UserController(userProvider);
   });
 
@@ -44,7 +38,7 @@ describe('UserController - createUser', () => {
   });
 
   it('should create a user and return token and user ID', async () => {
-     const reqBody = {
+    const reqBody = {
       username: 'testuser',
       password: 'password123',
       email: 'test@example.com',
@@ -57,7 +51,7 @@ describe('UserController - createUser', () => {
       password: 'password123',
       email: 'test@example.com',
       phoneNumber: '0788557270',
-    }
+    };
 
     const req = mockRequest(reqBody);
     const res = mockResponse();
@@ -68,9 +62,8 @@ describe('UserController - createUser', () => {
     await userController.createUser(req as Request, res as Response);
 
     expect(userProvider.createUser).toHaveBeenCalledWith(reqBody);
-
     expect(jwt.sign).toHaveBeenCalledWith(
-      { _id: createdUser._id!.toString() , username: createdUser.username },
+      { _id: createdUser._id!.toString(), username: createdUser.username },
       expect.any(String),
       { expiresIn: '1h' }
     );

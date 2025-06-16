@@ -30,6 +30,7 @@ describe('loginUser', () => {
       email: 'tygger@exemple.com',
       username: 'tygger',
       password: 'Axel123456',
+      profilePicture: 'Image.jpg'
     };
 
     const mockUserProvider = {
@@ -55,7 +56,7 @@ describe('loginUser', () => {
     
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ message: 'User logged in successfully', id: fakeUser._id, token: 'mockedToken' });
+    expect(res.json).toHaveBeenCalledWith({ message: 'User logged in successfully', id: fakeUser._id, username: fakeUser.username, email: fakeUser.email, profilePicture: fakeUser.profilePicture, token: 'mockedToken' });
 
     console.log( (res.status as jest.Mock)?.mock.calls, (res.json as jest.Mock)?.mock.calls );
   });

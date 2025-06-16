@@ -3,6 +3,8 @@ import { UserService } from "../services/User.service";
 import { IUser } from "../models/User.model";
 import { TYPES } from "../config/TYPES";
 
+type LoginParams = {identifiant: string; password: string}
+
 @injectable()
 export class UserProvider {
     constructor( @inject(TYPES.UserService) private userService: UserService ) {}
@@ -11,12 +13,20 @@ export class UserProvider {
         return this.userService.createUser(user);
     }
 
-    async loginUser(email: string, password: string): Promise<IUser | null> {
-        return this.userService.loginUser(email, password);
+    async loginUser(params: LoginParams): Promise<IUser | null> {
+        return this.userService.loginUser(params);
     }
 
     async findUserByUsername(username: string): Promise<IUser[]> {
         return this.userService.findUserByUsername(username);
+    }
+
+    async toggleFollow(userId: string, targetId: string): Promise<"followed" | "unfollowed"> {
+        return this.userService.toggleFollow(userId, targetId);
+    }
+
+    async updateUserProfile(userId: string, userData: Partial<IUser>): Promise<IUser> {
+        return this.userService.updateUserProfile(userId, userData);
     }
 
 }

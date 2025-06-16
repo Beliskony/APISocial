@@ -19,7 +19,6 @@ export const loginUser = (schema: ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse(req.body); // Valider les données de connexion
-      res.status(200).json({ message: 'User logged in successfully' });
       next(); // Passer au contrôleur si les données sont valides
     } catch (error) {
       res.status(400).json({ message: 'Validation error', errors: error });
