@@ -10,8 +10,9 @@ export class PostController {
 
     async createPost(req: Request, res: Response): Promise<void> {
         try {
-            const { user, text, media } = req.body;
-            const post: IPost = await this.postProvider.createPost(user, text, media);
+            const userId = req.params.user;
+            const { text, media } = req.body;
+            const post: IPost = await this.postProvider.createPost(userId, text, media);
              res.status(201).json(post);
         } catch (error) {
              res.status(500).json({ message: 'Erreur de creation du post', error });
@@ -30,6 +31,9 @@ export class PostController {
 
     async getAllPosts(req: Request, res: Response): Promise<void> {
         try {
+             const page = parseInt(req.query.page as string) || 1;
+             const limit = parseInt(req.query.limit as string) || 10;
+
             const posts = await this.postProvider.getAllPosts();
              res.status(200).json(posts);
         } catch (error) {
@@ -59,7 +63,8 @@ export class PostController {
             }
              res.status(200).json(post);
         } catch (error) {
-             res.status(500).json({ message: 'Error updating post', error });
+             res.status(500).json({ message: 'Error updating post', error: (error as Error).message });
+
         }
     }
 

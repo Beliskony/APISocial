@@ -52,6 +52,9 @@ export const FollowZodSchema = z.object({
 
 
 export const UpdateProfileZodSchema = z.object({
+  params: z.object({
+    userId: z.string().min(1, "User ID is required"),
+  }),
   body: z.object({
     username: z.string().min(3, "Username must be at least 3 characters long").optional(),
     email: z.string().email("Invalid email address").trim().toLowerCase().optional(),
@@ -65,7 +68,5 @@ export const UpdateProfileZodSchema = z.object({
       .optional(),
     profilePicture: z.string().optional(),
     phoneNumber: z.string().regex(/^(\+?\d{10,20})$/, "Invalid phone number").min(10, "Phone number must be at least 10 digits long").max(20).optional(),
-  }), params: z.object({
-    userId: z.string().min(1, "User ID is required"),
-  }),
+  })
 });

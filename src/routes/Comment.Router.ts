@@ -25,7 +25,6 @@ export class CommentRouter {
 
     this.router.delete("/delete", CommentMiddleware(DeleteCommentZodSchema), this.commentController.deleteComment.bind(this.commentController));
 
-    this.router.get("/getAllComments/:postId", this.commentController.getCommentsByPost.bind(this.commentController));
-
+    this.router.get("/:postId", this.commentController.getCommentsByPostId.bind(this.commentController));
   }
 }

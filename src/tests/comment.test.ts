@@ -183,40 +183,6 @@ describe('CommentController', () => {
         });
     });
 
-    describe('getCommentsByPost', () => {
-        it('should return 200 and comments array', async () => {
-            const comments = [{ user: 'user1', post: 'post1', content: 'test' }];
-            req = { params: { postId: 'post1' } };
-            commentProvider.getCommentsByPost.mockResolvedValue(comments);
-
-            await controller.getCommentsByPost(req as Request, res as Response);
-
-            expect(commentProvider.getCommentsByPost).toHaveBeenCalledWith('post1');
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalledWith(comments);
-        });
-
-        it('should handle errors and return 500', async () => {
-            req = { params: { postId: 'post1' } };
-            commentProvider.getCommentsByPost.mockRejectedValue(new Error('fail'));
-
-            await controller.getCommentsByPost(req as Request, res as Response);
-
-            expect(res.status).toHaveBeenCalledWith(500);
-            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Error fetching comments' }));
-        });
-
-        it('should return empty array if no comments', async () => {
-            req = { params: { postId: 'post999' } };
-            commentProvider.getCommentsByPost.mockResolvedValue([]);
-
-            await controller.getCommentsByPost(req as Request, res as Response);
-
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.json).toHaveBeenCalledWith([]);
-        });
-    });
-
     // Additional edge case: test with undefined req/res
     describe('Edge cases', () => {
         it('should handle undefined req.body gracefully in addComment', async () => {

@@ -19,3 +19,24 @@ export const userValidateRequest = (schema: ZodSchema) => {
     next();
   };
 };
+
+
+
+
+export const updateUserRequest = (schema: ZodSchema) => {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const result = schema.safeParse({ body: req.body, params: req.params });
+
+    if (!result.success) {
+      res.status(400).json({ errors: result.error.errors });
+      return;
+    }
+
+    req.body = result.data.body;
+
+    // Injecte la version validée des params dans req.validatedParams
+    (req as any).validatedParams = result.data.params;
+
+    next();
+  };
+};

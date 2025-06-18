@@ -55,13 +55,4 @@ export class CommentController {
         }
     }
 
-    async getCommentsByPost(req: Request, res: Response): Promise<void> {
-        try {
-            const { postId } = req.params;
-            const comments: IComment[] = await this.commentProvider.getCommentsByPost(postId)
-             res.status(200).json(comments);
-        } catch (error) {      
-             res.status(500).json({ message: 'Error fetching comments', error });
-        }
-    }
 }

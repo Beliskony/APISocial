@@ -106,7 +106,7 @@ export class UserController {
     // Mettre à jour le profil de l'utilisateur
     async updateUserProfile(req: Request, res: Response): Promise<void> {
         try {
-            const userId = req.params.id;
+            const userId = req.params.userId;
             const userData = req.body;
 
             if (!userId || !userData) {

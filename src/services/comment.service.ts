@@ -17,17 +17,14 @@ export class CommentService {
 
     
     async getCommentsByPostId(postId: string): Promise<IComment[]> {
-        return await CommentModel.find({ post: postId }).populate("user", "username").exec();
+        return await CommentModel.find({ postId }).sort({createdAt: 1}).populate("user", "username").exec();
     }
 
-    async getCommentsByPost(postId: string): Promise<IComment[]> {
-        return await CommentModel.find({ post: postId }).populate("user", "username").exec();
-    }
 
     async updateComment(commentId: string, userId: string, content: string, newContent: string): Promise<IComment | null> {
         const upComment = await CommentModel.findById(commentId)
 
-            if (!upComment || upComment.user !== userId) {
+            if (!upComment || upComment.user.toString() !== userId) {
                 throw new Error("Comment not found ou pas autoiser a modifier ce commentaire");
             }
 
@@ -37,7 +34,7 @@ export class CommentService {
 
     async deleteComment(commentId: string, userId: string): Promise<boolean> {
         const delComment = await CommentModel.findById(commentId)
-            if (!delComment || delComment.user !== userId) {
+            if (!delComment || delComment.user.toString() !== userId) {
                 throw new Error("Comment not found ou pas autoiser a supprimer ce commentaire");
             }
 

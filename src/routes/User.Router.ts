@@ -2,7 +2,7 @@ import { Router } from "express";
 import { UserController } from "../controllers/userController";
 import {  loginUser, registerUser, } from "../middlewares/auth";
 import { UserZodSchema, LoginZodSchema, FollowZodSchema, UpdateProfileZodSchema } from "../schemas/User.ZodSchema";
-import { userValidateRequest } from "../middlewares/userMiddleware";
+import { userValidateRequest, updateUserRequest } from "../middlewares/userMiddleware";
 import { inject, injectable } from "inversify";
 import { TYPES } from "../config/TYPES";
 
@@ -27,6 +27,6 @@ export class UserRouter {
 
     this.router.post("/follow/:targetId",userValidateRequest(FollowZodSchema), this.userController.toggleFollow.bind(this.userController));
 
-    this.router.put("/profile",userValidateRequest(UpdateProfileZodSchema), this.userController.updateUserProfile.bind(this.userController));
+    this.router.put("/profile/:userId",updateUserRequest(UpdateProfileZodSchema), this.userController.updateUserProfile.bind(this.userController));
   }
 }

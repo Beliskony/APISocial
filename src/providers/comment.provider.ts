@@ -8,7 +8,7 @@ export class CommentProvider {
     constructor(@inject(TYPES.CommentService) private commentService: CommentService) {}
 
     async addComment(postId: string, userId: string, content: string): Promise<IComment> {
-        return await this.commentService.addComment(postId, userId, content);
+        return this.commentService.addComment(postId, userId, content);
     }
 
     async getCommentsByPostId(postId: string): Promise<IComment[]> {
@@ -21,10 +21,6 @@ export class CommentProvider {
 
     async deleteComment(commentId: string, userId: string): Promise<boolean> {
         return await this.commentService.deleteComment(commentId, userId);
-    }
-
-    async getCommentsByPost(postId: string): Promise<IComment[]> {
-        return await this.commentService.getCommentsByPost(postId);
     }
 
 }

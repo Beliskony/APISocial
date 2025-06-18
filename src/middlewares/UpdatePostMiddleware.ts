@@ -11,6 +11,7 @@ export const UpdatePostMiddleware = (schema: ZodSchema) => {
         } catch (error) {
             if (error instanceof ZodError) {
                  res.status(400).json({ error: error.errors });
+                 return;
             }
             next(error);
         }

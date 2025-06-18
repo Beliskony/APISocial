@@ -1,5 +1,6 @@
 import { injectable } from "inversify";
 import PostModel, { IPost } from "../models/Post.model";
+import UserModel from "../models/User.model";
 
 
 @injectable()
@@ -13,7 +14,11 @@ export class PostService {
             createdAt: new Date(),
             updatedAt: new Date(),
         });
-        return await newPost.save();
+        const savedPost = await newPost.save();
+
+        // Logique pour mettre à jour le nombre de posts de l'utilisateur
+        await UserModel.findByIdAndUpdate(userId, {$push: { posts: savedPost._id }}, { new: true });
+        return savedPost;
     }
 
 
@@ -24,17 +29,17 @@ export class PostService {
                 //{ 'media.images': { $regex: text, $options: 'i' } }, // Recherche dans les images
                 //{ 'media.videos': { $regex: text, $options: 'i' } }, // Recherche dans les vidéos
             ],
-        }).populate('userId')
+        }).populate('user')
     }
 
     async getPostByUser(userId: string): Promise<IPost[]> {
         return await PostModel.find({user: userId}).sort({createdAt: -1}).exec();
     }
 
-    async getAllPosts(): Promise<IPost[]> {
-        return await PostModel.find().populate('userId').sort({ createdAt: -1 }).exec();
+    async getAllPosts(page = 1, limit = 20): Promise<IPost[]> {
+        const skip = (page - 1) * limit;
+        return await PostModel.find().populate('userId').sort({ createdAt: -1 }).skip(skip).limit(limit).exec();
     }
-
     async updatePost(postId: string, userId:string,  text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost | null> {
         
         console.log("🔍 Tentative de mise à jour");
@@ -65,7 +70,7 @@ export class PostService {
         if (post?.user.toString() !== userId) {
             throw new Error("You are not authorized to modify this post");
         }
-        await PostModel.findByIdAndDelete(postId);
+        await PostModel.findByIdAndDelete(userId, {$pull: { posts: postId }});
         return true;
     }
 }

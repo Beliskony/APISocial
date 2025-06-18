@@ -19,8 +19,8 @@ export class PostProvider {
         return this.postService.getPostByUser(UserId);
     }
 
-    async getAllPosts(): Promise<IPost[] | null> {
-        return this.postService.getAllPosts();
+    async getAllPosts(page = 1, limit = 20): Promise<IPost[] | null> {
+        return this.postService.getAllPosts(page, limit);
     }
 
     async updatePost(postId: string,user:string ,text?: string, media?: {images?: string[], videos?: string[]}): Promise<IPost | null> {
