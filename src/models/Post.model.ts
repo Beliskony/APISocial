@@ -1,5 +1,4 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { comment } from 'postcss';
 
 export interface IPost extends Document {
     user: mongoose.Types.ObjectId; // Référence à l'utilisateur
