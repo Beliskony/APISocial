@@ -26,6 +26,6 @@ export class PostRouter {
         this.router.patch("/update/:user/:postId", UpdatePostMiddleware(PostUpdateZodSchema), this.postController.updatePost.bind(this.postController));
         this.router.get("/searchPost", this.postController.getPosts.bind(this.postController));
         this.router.get("/getPostsByUser/:user", this.postController.getPostsByUser.bind(this.postController));
-        this.router.get("/AllPosts", this.postController.getAllPosts.bind(this.postController));
+        this.router.get("/AllPosts/:user", this.postController.getAllPosts.bind(this.postController));
     }
 }

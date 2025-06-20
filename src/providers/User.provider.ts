@@ -29,4 +29,8 @@ export class UserProvider {
         return this.userService.updateUserProfile(userId, userData);
     }
 
+    async getMe(userId: string): Promise<IUser | null> {
+        return this.userService.getMe(userId);
+    }
+
 }

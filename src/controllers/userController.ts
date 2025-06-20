@@ -3,6 +3,7 @@ import { inject, injectable } from "inversify";
 import { UserProvider } from "../providers/User.provider";
 import { TYPES } from "../config/TYPES";
 import jwt from "jsonwebtoken";
+import { AuthRequest } from "../middlewares/Auth.Types";
 
 
 type LoginParams = { identifiant: string; password: string; };
@@ -12,6 +13,14 @@ type LoginParams = { identifiant: string; password: string; };
 export class UserController {
     constructor(@inject(TYPES.UserProvider) private userProvider: UserProvider) {}
 
+    private generateToken(user: any): string {
+        return jwt.sign(
+            { _id: user._id, username: user.username, phoneNumber: user.phoneNumber, email: user.email, profilePicture: user.profilePicture, posts: user.posts, followers: user.followers },
+            process.env.JWT_SECRET || "your_secret_key",
+            { expiresIn: "30d" }
+        );
+    }
+
     // Créer un nouvel utilisateur
     async createUser(req: Request, res: Response): Promise<void> {
         try {
@@ -19,11 +28,9 @@ export class UserController {
             const newUser = await this.userProvider.createUser(user);
 
             // Génération d'un token JWT
-            const token = jwt.sign(
-                { _id: newUser._id, username: newUser.username },
-                process.env.JWT_SECRET || "your_secret_key",
-                { expiresIn: "1h" }
-            );
+            const token = this.generateToken(newUser);
+            // Exclure le mot de passe du token
+            const { password, ...userWithoutPassword } = newUser.toObject();
 
             res.status(201).json({message: "Utilisateur enregistré avec succès",
                 id: newUser._id.toString(),
@@ -42,6 +49,7 @@ export class UserController {
 
               if (!identifiant || !password ) {
             res.status(400).json({ message: "Email ou numéro de téléphone et mot de passe sont requis" });
+            return;
         }
 
             const user = await this.userProvider.loginUser({ identifiant, password} as LoginParams);
@@ -53,16 +61,16 @@ export class UserController {
         }
 
              // Génération d'un token JWT
-             const token = jwt.sign(
-                { _id: user?._id, username: user?.username },
-                process.env.JWT_SECRET || "your_secret_key",
-                { expiresIn: "1h" }
-            );
+             const token = this.generateToken(user);
+            // Exclure le mot de passe du token
+            const { password: userPassword, ...userWithoutPassword } = user.toObject();
             return res.status(200).json({message: "User logged in successfully",
                 id: user?._id,
                 username: user?.username,
                 email: user?.email,
                 profilePicture: user?.profilePicture,
+                posts: user?.posts,
+                followers: user?.followers,
                 token,}) as unknown as void;                
                 
         } catch (error: any) {
@@ -79,16 +87,16 @@ export class UserController {
                 const { password, phoneNumber, email, ...safeUser} = user.toObject();
                 return safeUser;
             })
-            res.status(200).json(users);
+            res.status(200).json(safeUser);
         } catch (error: any) {
             res.status(400).json({ message: error.message });
         }
     }
 
     // Suivre ou ne plus suivre un utilisateur
-    async toggleFollow(req: Request, res: Response): Promise<void> {
+    async toggleFollow(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const { userId } = req.body;        // userId vient du body
+            const userId  = req.user?._id;        
             const { targetId } = req.params;
 
             if (!userId || !targetId) {
@@ -104,9 +112,9 @@ export class UserController {
     }
 
     // Mettre à jour le profil de l'utilisateur
-    async updateUserProfile(req: Request, res: Response): Promise<void> {
+    async updateUserProfile(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const userId = req.params.userId;
+            const userId = req.user?._id; // userId vient du token JWT
             const userData = req.body;
 
             if (!userId || !userData) {
@@ -116,6 +124,30 @@ export class UserController {
 
             const updatedUser = await this.userProvider.updateUserProfile(userId, userData);
             res.status(200).json({ message: "User profile updated successfully", user: updatedUser });
+        } catch (error: any) {
+            res.status(400).json({ message: error.message });
+        }
+    }
+
+    //get me (profile)
+    async getMe(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const userId = req.user?._id; // userId vient du token JWT
+
+            if (!userId) {
+                res.status(400).json({ message: "User ID is required" });
+                return;
+            }
+
+            const user = await this.userProvider.getMe(userId);
+            if (!user) {
+                res.status(404).json({ message: "User not found" });
+                return;
+            }
+
+            // Exclure le mot de passe du profil
+            const { password, ...userWithoutPassword } = user.toObject();
+            res.status(200).json(userWithoutPassword);
         } catch (error: any) {
             res.status(400).json({ message: error.message });
         }

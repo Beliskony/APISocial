@@ -1,16 +1,10 @@
-import { loginUser } from '../middlewares/auth';
-import { LoginZodSchema } from '../schemas/User.ZodSchema';
 import { UserController } from '../controllers/userController';
-
 import jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 
-// Mocks
-jest.mock('../models/User.model');
-jest.mock('bcrypt');
 jest.mock('jsonwebtoken');
 
-describe('loginUser', () => {
+describe('UserController - loginUser', () => {
   const mockRequest = (body: any): Partial<Request> => ({ body });
   const mockResponse = (): Partial<Response> => {
     const res: Partial<Response> = {};
@@ -23,43 +17,63 @@ describe('loginUser', () => {
     jest.clearAllMocks();
   });
 
-
- it('should login user and return token', async () => {
+  it('should login user and return token', async () => {
     const fakeUser = {
       _id: 'userId123',
       email: 'tygger@exemple.com',
       username: 'tygger',
       password: 'Axel123456',
-      profilePicture: 'Image.jpg'
+      profilePicture: 'Image.jpg',
+      phoneNumber: '1234567890',
+      posts: [],
+      followers: [],
+      toObject: function () {
+        const { password, ...rest } = this;
+        return rest;
+      }
     };
 
     const mockUserProvider = {
       loginUser: jest.fn().mockResolvedValue(fakeUser),
     };
-    
+
     const userController = new UserController(mockUserProvider as any);
-    (jwt.sign as jest.Mock).mockReturnValue('mockedToken')
+    (jwt.sign as jest.Mock).mockReturnValue('mockedToken');
 
-     const req = {
-    body: {
-      email: fakeUser.email,
+    const req = mockRequest({
+      identifiant: fakeUser.email,  // <-- utiliser "identifiant" ici
       password: fakeUser.password,
-    },
-  } as Partial<Request>;
+    }) as Request;
 
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn(),
-  } as Partial<Response>;
-    
-    await userController.loginUser(req as Request, res as Response);
-    
+    const res = mockResponse() as Response;
+
+    await userController.loginUser(req, res);
+
+    expect(mockUserProvider.loginUser).toHaveBeenCalledWith({ identifiant: fakeUser.email, password: fakeUser.password });
+    expect(jwt.sign).toHaveBeenCalledWith(
+      {
+        _id: fakeUser._id,
+        username: fakeUser.username,
+        phoneNumber: fakeUser.phoneNumber,
+        email: fakeUser.email,
+        profilePicture: fakeUser.profilePicture,
+        posts: fakeUser.posts,
+        followers: fakeUser.followers,
+      },
+      expect.any(String),
+      { expiresIn: '30d' }
+    );
 
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ message: 'User logged in successfully', id: fakeUser._id, username: fakeUser.username, email: fakeUser.email, profilePicture: fakeUser.profilePicture, token: 'mockedToken' });
-
-    console.log( (res.status as jest.Mock)?.mock.calls, (res.json as jest.Mock)?.mock.calls );
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'User logged in successfully',
+      id: fakeUser._id,
+      username: fakeUser.username,
+      email: fakeUser.email,
+      profilePicture: fakeUser.profilePicture,
+      posts: fakeUser.posts,
+      followers: fakeUser.followers,
+      token: 'mockedToken',
+    });
   });
-
-
 });

@@ -95,4 +95,13 @@ async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<IUs
     return updatedUser;
   }
 
+  //get me 
+    async getMe(userId: string): Promise<IUser | null> {
+        const user = await UserModel.findById(userId)
+            .select("-password -phoneNumber -email") 
+            .populate('posts', '-user') // Exclure le champ 'user' des posts
+            .populate('followers', '-password -phoneNumber -email'); // Exclure les champs sensibles des followers
+        return user;
+    }
+
 }

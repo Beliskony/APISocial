@@ -1,6 +1,7 @@
 import { injectable } from "inversify";
 import PostModel, { IPost } from "../models/Post.model";
 import UserModel from "../models/User.model";
+import mongoose from "mongoose";
 
 
 @injectable()
@@ -36,17 +37,49 @@ export class PostService {
         return await PostModel.find({user: userId}).sort({createdAt: -1}).exec();
     }
 
-    async getAllPosts(page = 1, limit = 20): Promise<IPost[]> {
-        const skip = (page - 1) * limit;
-        return await PostModel.find().populate('userId').sort({ createdAt: -1 }).skip(skip).limit(limit).exec();
+    async getAllPosts(userId: string, page = 1, limit = 20): Promise<IPost[]> {
+        //1. Trouver les followers de l'utilisateur
+        const currentUser = await UserModel.findById(userId).populate('followers');
+        if (!currentUser) {
+            throw new Error("Utilisateur non trouvé");
+        }
+        const followedUsers = [...currentUser.followers ?? [], userId]; // Inclure l'utilisateur lui-même
+        //2. Récupérer les posts des utilisateurs suivis
+        const posts = await PostModel.find({ user: { $in: followedUsers } })
+            .populate('user', '-password -email -phoneNumber')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(Math.floor(limit * 0.65)) // Limite à 65% des posts
+            .exec();
+
+        //3. Récupérer les posts aleatoires d'auters utilisateurs limite 35%
+        const remainingLimit = Math.floor(limit * 0.35);
+        const randomPosts = await PostModel.aggregate([
+                {
+                    $match: { user: { $nin: followedUsers.map(id => new mongoose.Types.ObjectId(id)) } }
+                  },
+                { $sample: { size: remainingLimit }}, // Prendre un échantillon aléatoire
+                { $sort: { createdAt: -1 } }// Trier par date de création
+        ]);
+
+         // 4. Récupérer les infos des users des posts aléatoires
+        const populatedRandomPosts = await PostModel.populate(randomPosts, {
+                path: 'user',
+                select: '-password -email -phoneNumber',
+                model: 'User'
+            });
+
+        // 5. Fusionner les deux listes
+        const mixedFeed = [...posts, ...populatedRandomPosts]
+
+        // 6. Trier les publications finales par date (facultatif)
+        mixedFeed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        return mixedFeed;
     }
+
     async updatePost(postId: string, userId:string,  text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost | null> {
         
-        console.log("🔍 Tentative de mise à jour");
-        console.log("➡️ postId reçu :", postId);
-        console.log("➡️ userId reçu :", userId);
-
-
         const post = await PostModel.findById(postId)
 
         if (!post) {
@@ -66,11 +99,19 @@ export class PostService {
     }
 
     async deletePost(postId: string, userId: string): Promise<boolean> {
-        const post = await PostModel.findById(postId)
-        if (post?.user.toString() !== userId) {
+        const post = await PostModel.findById(postId);
+        if (!post) {
+            throw new Error("Post non trouve");
+        }
+        if (post.user.toString() !== userId) {
             throw new Error("You are not authorized to modify this post");
         }
-        await PostModel.findByIdAndDelete(userId, {$pull: { posts: postId }});
+
+        // Supprimer le post
+        await PostModel.findByIdAndDelete(postId);
+
+        // Mettre à jour l'utilisateur pour retirer le post de sa liste
+        await PostModel.findByIdAndUpdate(userId, {$pull: { posts: postId }});
         return true;
     }
 }

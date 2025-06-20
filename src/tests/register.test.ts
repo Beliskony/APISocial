@@ -45,27 +45,42 @@ describe('UserController - createUser', () => {
       phoneNumber: '0788557270',
     };
 
-    const createdUser: Partial<IUser> = {
-      _id: '507f191e810c19729de860ea',
+    const createdUser = {
+       _id: '507f191e810c19729de860ea',
       username: 'testuser',
-      password: 'password123',
+      password: 'hashedpassword',
       email: 'test@example.com',
       phoneNumber: '0788557270',
-    };
+      profilePicture: 'pic.jpg',
+      posts: [],
+      followers: [],
+      toObject: function () {
+        const { password, ...rest } = this;
+        return rest;
+    }
+  };
 
     const req = mockRequest(reqBody);
     const res = mockResponse();
 
-    userProvider.createUser.mockResolvedValue(createdUser as IUser);
+    userProvider.createUser.mockResolvedValue(createdUser as unknown as IUser);
     (jwt.sign as jest.Mock).mockReturnValue('mockedToken');
 
     await userController.createUser(req as Request, res as Response);
 
     expect(userProvider.createUser).toHaveBeenCalledWith(reqBody);
     expect(jwt.sign).toHaveBeenCalledWith(
-      { _id: createdUser._id!.toString(), username: createdUser.username },
+       {
+        _id: createdUser._id,
+        username: createdUser.username,
+        phoneNumber: createdUser.phoneNumber,
+        email: createdUser.email,
+        profilePicture: createdUser.profilePicture,
+        posts: createdUser.posts,
+        followers: createdUser.followers,
+      },
       expect.any(String),
-      { expiresIn: '1h' }
+      { expiresIn: '30d' }
     );
 
     expect(res.status).toHaveBeenCalledWith(201);

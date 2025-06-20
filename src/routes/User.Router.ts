@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { UserController } from "../controllers/userController";
-import {  loginUser, registerUser, } from "../middlewares/auth";
+import {  authenticateJWT, loginUser, registerUser, } from "../middlewares/auth";
 import { UserZodSchema, LoginZodSchema, FollowZodSchema, UpdateProfileZodSchema } from "../schemas/User.ZodSchema";
 import { userValidateRequest, updateUserRequest } from "../middlewares/userMiddleware";
 import { inject, injectable } from "inversify";
@@ -25,8 +25,10 @@ export class UserRouter {
 
     this.router.post("/login",loginUser(LoginZodSchema), this.userController.loginUser.bind(this.userController));
 
-    this.router.post("/follow/:targetId",userValidateRequest(FollowZodSchema), this.userController.toggleFollow.bind(this.userController));
+    this.router.post("/follow/:targetId", authenticateJWT, userValidateRequest(FollowZodSchema), this.userController.toggleFollow.bind(this.userController));
 
-    this.router.put("/profile/:userId",updateUserRequest(UpdateProfileZodSchema), this.userController.updateUserProfile.bind(this.userController));
+    this.router.put("/profile", authenticateJWT, updateUserRequest(UpdateProfileZodSchema), this.userController.updateUserProfile.bind(this.userController));
+
+    this.router.get("/me", authenticateJWT ,this.userController.getMe.bind(this.userController));
   }
 }

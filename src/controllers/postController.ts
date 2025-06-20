@@ -6,7 +6,7 @@ import { TYPES } from '../config/TYPES';
 
 
 export class PostController {
-    constructor( @inject(TYPES.PostService) private postProvider: PostProvider) {}
+    constructor( @inject(TYPES.PostProvider) private postProvider: PostProvider) {}
 
     async createPost(req: Request, res: Response): Promise<void> {
         try {
@@ -31,10 +31,11 @@ export class PostController {
 
     async getAllPosts(req: Request, res: Response): Promise<void> {
         try {
+             const userId = req.params.user;
              const page = parseInt(req.query.page as string) || 1;
-             const limit = parseInt(req.query.limit as string) || 10;
+             const limit = parseInt(req.query.limit as string) || 20;
 
-            const posts = await this.postProvider.getAllPosts();
+            const posts = await this.postProvider.getAllPosts(userId, page, limit);
              res.status(200).json(posts);
         } catch (error) {
              res.status(500).json({ message: 'Error fetching posts', error });
@@ -43,11 +44,11 @@ export class PostController {
 
     async getPostsByUser(req: Request, res: Response): Promise<void> {
         try {
-          const {userId} = req.params;
-          const posts = await this.postProvider.getPostsByUser(userId);
+          const {user} = req.params;
+          const posts = await this.postProvider.getPostsByUser(user);
           res.status(200).json(posts);
         } catch (error) {
-          res.status(500).json({ message: 'Error fetching user posts', error})
+          res.status(500).json({ message: 'Error fetching user posts', error: (error as Error).message });
         }
     }
 
@@ -70,10 +71,15 @@ export class PostController {
 
     async deletePost(req: Request, res: Response): Promise<void> {
         try {
-          const post = req.body.postId;
-            const { postId, userId } = req.params;
-            await post.deleteOne({ _id: postId, user: userId });
-             res.status(200).json({ message: 'Post deleted successfully' });
+          const { postId, user } = req.params;
+
+          const result = await this.postProvider.deletePost(postId, user);
+           if (!result) {
+            res.status(400).json({ message: "Post not found in request body" });
+            return;
+          }
+          res.status(200).json({ message: 'Post deleted successfully' });
+             
         } catch (error) {
              res.status(500).json({ message: 'Error deleting post', error });
         }
