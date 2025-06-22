@@ -25,4 +25,8 @@ export class StoryProvider {
     async deleteUserStory(storyId: string, userId: string): Promise<void> {
         return this.storyService.deleteUserStory(storyId, userId);
     }
+
+    async getStoryOfFollowing(userId: string): Promise<IStory[]> {
+        return this.storyService.getStoryOfFollowing(userId);
+    }
 }

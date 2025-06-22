@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { inject } from 'inversify';
 import { PostProvider } from '../providers/Post.provider';
+import { AuthRequest } from '../middlewares/Auth.Types';
 import { IPost } from '../models/Post.model';
 import { TYPES } from '../config/TYPES';
 
@@ -8,9 +9,13 @@ import { TYPES } from '../config/TYPES';
 export class PostController {
     constructor( @inject(TYPES.PostProvider) private postProvider: PostProvider) {}
 
-    async createPost(req: Request, res: Response): Promise<void> {
+    async createPost(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const userId = req.params.user;
+            const userId = req.user?._id;
+            if (!userId) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
             const { text, media } = req.body;
             const post: IPost = await this.postProvider.createPost(userId, text, media);
              res.status(201).json(post);
@@ -29,9 +34,13 @@ export class PostController {
         }
     }
 
-    async getAllPosts(req: Request, res: Response): Promise<void> {
+    async getAllPosts(req: AuthRequest, res: Response): Promise<void> {
         try {
-             const userId = req.params.user;
+             const userId = req.user?._id;
+             if (!userId) {
+                 res.status(401).json({ message: 'Unauthorized' });
+                 return;
+             }
              const page = parseInt(req.query.page as string) || 1;
              const limit = parseInt(req.query.limit as string) || 20;
 
@@ -42,9 +51,13 @@ export class PostController {
         }
     }
 
-    async getPostsByUser(req: Request, res: Response): Promise<void> {
+    async getPostsByUser(req: AuthRequest, res: Response): Promise<void> {
         try {
-          const {user} = req.params;
+          const user = req.user?._id;
+          if (!user) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+          }
           const posts = await this.postProvider.getPostsByUser(user);
           res.status(200).json(posts);
         } catch (error) {
@@ -52,9 +65,14 @@ export class PostController {
         }
     }
 
-    async updatePost(req: Request, res: Response): Promise<void> {
+    async updatePost(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const {user, postId} = req.params;
+            const user = req.user?._id;
+            if (!user) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+            const { postId} = req.params;
             const { text, media } = req.body;
 
             const post: IPost | null = await this.postProvider.updatePost( postId ,user, text, media );
@@ -69,9 +87,14 @@ export class PostController {
         }
     }
 
-    async deletePost(req: Request, res: Response): Promise<void> {
+    async deletePost(req: AuthRequest, res: Response): Promise<void> {
         try {
-          const { postId, user } = req.params;
+          const user = req.user?._id;
+            if (!user) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+          const { postId } = req.params;
 
           const result = await this.postProvider.deletePost(postId, user);
            if (!result) {

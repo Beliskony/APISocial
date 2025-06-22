@@ -1,5 +1,4 @@
 import { Request } from "express";
-import { Types } from "mongoose";
 
 export interface AuthUser {
  _id: string; // User ID from the JWT token

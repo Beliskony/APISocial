@@ -1,15 +1,20 @@
 import { Request, Response } from "express";
 import { inject, injectable } from "inversify";
 import { StoryProvider } from "../providers/Story.provider";
+import { AuthRequest } from "../middlewares/Auth.Types";
 import { TYPES } from "../config/TYPES";
 
 @injectable()
 export class StoryController {
   constructor(@inject(TYPES.StoryProvider) private storyProvider: StoryProvider) {}
 
-  async createStory(req: Request, res: Response) {
+  async createStory(req: AuthRequest, res: Response) {
     try {
-        const userId = req.params.userId;
+        const userId = req.user?._id; // Récupération de l'ID de l'utilisateur authentifié
+        if (!userId) {
+           res.status(401).json({ message: "Utilisateur non authentifié" });
+           return;
+        }
         const content = req.body.content; 
         const story = await this.storyProvider.createStory({ userId, content });
         res.status(201).json(story);
@@ -22,9 +27,13 @@ export class StoryController {
     }
   }
 
-  async getUserStories(req: Request, res: Response) {
+  async getUserStories(req: AuthRequest, res: Response) {
     try {
-        const { userId } = req.params;
+        const userId = req.user?._id; // Récupération de l'ID de l'utilisateur authentifié
+        if (!userId) {
+            res.status(401).json({ message: "Utilisateur non authentifié" });
+            return;
+        }
         const stories = await this.storyProvider.getUserStories(userId);
         res.status(200).json(stories);
     } catch (error) {
@@ -38,10 +47,10 @@ export class StoryController {
     res.status(204).send(); // Sans contenu
   }
 
-  async deleteUserStory(req: Request, res: Response) {
+  async deleteUserStory(req: AuthRequest, res: Response) {
     try {
         const { storyId } = req.params;
-        const userId = req.params.userId; 
+        const userId = req.user?._id; // Récupération de l'ID de l'utilisateur authentifié
 
         if (!userId) {
             return res.status(401).json({ message: "Utilisateur non authentifié" });
@@ -53,6 +62,21 @@ export class StoryController {
         console.error("Erreur lors de la suppression de la story:", error);
         res.status(500).json({ message: "Erreur lors de la suppression de la story" });
     }
-}
+  }
+
+  async getStoryOfFollowers(req: AuthRequest, res: Response) {
+    try {
+        const userId = req.user?._id; // Récupération de l'ID de l'utilisateur authentifié
+        if (!userId) {
+            res.status(401).json({ message: "Utilisateur non authentifié" });
+            return;
+        }
+        const stories = await this.storyProvider.getStoryOfFollowing(userId);
+        res.status(200).json(stories);
+    } catch (error) {
+        console.error("Erreur lors de la récupération des stories des utilisateurs suivis:", error);
+        res.status(500).json({ message: "Erreur lors de la récupération des stories des utilisateurs suivis" });
+    }
+  }
 
 }

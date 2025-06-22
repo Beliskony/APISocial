@@ -1,6 +1,6 @@
 import express from 'express';
 import { inject, injectable } from 'inversify';
-import { z } from 'zod';
+import { authenticateJWT } from '../middlewares/auth';
 import { LikeController } from '../controllers/likeController';
 import { TYPES } from '../config/TYPES';
 import { LikeRequest } from '../middlewares/LikeMiddleware';
@@ -19,8 +19,8 @@ export class LikeRouter {
     }
 
     private initializeRoutes(): void {
-        this.router.post('/add', LikeRequest(LikeZodSchema), this.likeController.addLike.bind(this.likeController));
-        this.router.delete('/remove', LikeRequest(LikeZodSchema), this.likeController.removeLike.bind(this.likeController));
+        this.router.post('/add',authenticateJWT, LikeRequest(LikeZodSchema), this.likeController.addLike.bind(this.likeController));
+        this.router.delete('/remove',authenticateJWT, LikeRequest(LikeZodSchema), this.likeController.removeLike.bind(this.likeController));
         this.router.get('/post/:postId', this.likeController.getLikesForPost.bind(this.likeController));
     }
 }

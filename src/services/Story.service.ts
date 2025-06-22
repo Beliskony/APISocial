@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { injectable } from 'inversify';
+import UserModel from '../models/User.model';
 import StoryModel,{ IStory } from '../models/Story.model';
 
 
@@ -24,7 +25,19 @@ export class StoryService {
 
     async deleteUserStory(storyId: string, userId: string): Promise<void> {
         await StoryModel.deleteOne({ _id: new mongoose.Types.ObjectId(storyId), userId: new mongoose.Types.ObjectId(userId) }).exec();
-}
+    }
+
+    async getStoryOfFollowing(userId: string): Promise<IStory[]> {
+        const now = new Date();
+
+        const user = await UserModel.findById(userId).populate('followers', '_id').exec();
+        if (!user || !user.followers || user.followers.length === 0) {
+            return [];
+        }
+        return await StoryModel.find({ userId: { $in: userId }, expiresAt: { $gt: now } })
+            .populate('userId', 'username profilePicture') // Assuming you want to populate user details
+            .exec();
+    }
 }
 
 export default StoryService;

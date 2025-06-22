@@ -1,15 +1,21 @@
 import { Request, Response } from 'express';
 import { inject,injectable } from 'inversify';
 import { LikeProvider } from '../providers/Like.provider';
+import { AuthRequest } from '../middlewares/Auth.Types';
 import { TYPES } from '../config/TYPES';
 
 @injectable()
 export class LikeController {
     constructor(@inject(TYPES.LikeProvider) private likeProvider: LikeProvider) {}
 
-    async addLike(req: Request, res: Response) {
+    async addLike(req: AuthRequest, res: Response) {
         try {
-             const { userId, postId } = req.body;
+            const userId = req.user?._id;
+            if (!userId) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+             const { postId } = req.body;
              const existingLike = await this.likeProvider.hasUserLiked(userId, postId);
 
              if (existingLike) {
@@ -23,9 +29,14 @@ export class LikeController {
         }
     }
 
-    async removeLike(req: Request, res: Response) {
+    async removeLike(req: AuthRequest, res: Response) {
         try {
-            const { userId, postId } = req.body;
+            const userId = req.user?._id;
+            if (!userId) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+            const { postId } = req.body;
             await this.likeProvider.removeLike(userId, postId);
             res.status(200).json({ message: 'Like removed successfully' });
         } catch (error) {
@@ -47,7 +58,12 @@ export class LikeController {
 
     async hasUserLiked(req: Request, res: Response) {
         try {
-            const { userId, postId } = req.body;
+            const userId = req.body.userId; // Assuming userId is passed in the request body
+            if (!userId) {
+                res.status(401).json({ message: 'Unauthorized' });
+                return;
+            }
+            const { postId } = req.body;
             const hasLiked = await this.likeProvider.hasUserLiked(userId, postId);
             res.status(200).json({ hasLiked });
         } catch (error) {
