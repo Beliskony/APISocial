@@ -46,28 +46,22 @@ export class PostService {
         const followedUsers = [...currentUser.followers ?? [], userId]; // Inclure l'utilisateur lui-même
         //2. Récupérer les posts des utilisateurs suivis
         const posts = await PostModel.find({ user: { $in: followedUsers } })
-            .populate('user', '-password -email -phoneNumber')
+            .populate('user', '-password -email -phoneNumber', '_id username profilePicture')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(Math.floor(limit * 0.65)) // Limite à 65% des posts
             .exec();
 
-        //3. Récupérer les posts aleatoires d'auters utilisateurs limite 35%
-        const remainingLimit = Math.floor(limit * 0.35);
-        const randomPosts = await PostModel.aggregate([
-                {
-                    $match: { user: { $nin: followedUsers.map(id => new mongoose.Types.ObjectId(id)) } }
-                  },
-                { $sample: { size: remainingLimit }}, // Prendre un échantillon aléatoire
-                { $sort: { createdAt: -1 } }// Trier par date de création
-        ]);
 
-         // 4. Récupérer les infos des users des posts aléatoires
-        const populatedRandomPosts = await PostModel.populate(randomPosts, {
-                path: 'user',
-                select: '-password -email -phoneNumber',
-                model: 'User'
-            });
+            const randomPostIds = await PostModel.aggregate([
+                 { $match: { user: { $nin: followedUsers.map(id => new mongoose.Types.ObjectId(id)) } } },
+                 { $sample: { size: Math.floor(limit * 0.35)} },
+                 { $project: { _id: 1 } }, // récupère uniquement l'ID
+                ]);
+
+                const populatedRandomPosts = await PostModel.find({ _id: { $in: randomPostIds.map(post => post._id) } })
+                .populate('user', '_id username profilePicture')
+            
 
         // 5. Fusionner les deux listes
         const mixedFeed = [...posts, ...populatedRandomPosts]
