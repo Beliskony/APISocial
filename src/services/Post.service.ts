@@ -105,7 +105,7 @@ export class PostService {
         await PostModel.findByIdAndDelete(postId);
 
         // Mettre à jour l'utilisateur pour retirer le post de sa liste
-        await PostModel.findByIdAndUpdate(userId, {$pull: { posts: postId }});
+        await UserModel.findByIdAndUpdate(userId, {$pull: { posts: postId }});
         return true;
     }
 }
