@@ -11,15 +11,15 @@ export class LikeController {
     async toggleLike(req: AuthRequest, res: Response) {
         try {
             const userId = req.user?._id; // Assuming user ID is stored in the request object after authentication
-            if (!userId) {
+            const postId = req.params.postId;
+            if (!userId || !postId) {
                 res.status(401).json({ message: 'Unauthorized' });
                 return;
             }
             
-            const { postId } = req.params;
             const result = await this.likeProvider.toggleLike(userId, postId);
             
-            res.status(200).json({ message: `Post ${result}`, postId, userId, liked: result === 'liked' });
+            res.status(200).json({ message: `Post ${result}`, postId, liked: result === 'liked' });
         } catch (error) {
             res.status(500).json({ message: 'Error toggling like', error });
         }
