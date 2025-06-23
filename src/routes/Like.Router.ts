@@ -19,8 +19,7 @@ export class LikeRouter {
     }
 
     private initializeRoutes(): void {
-        this.router.post('/add',authenticateJWT, LikeRequest(LikeZodSchema), this.likeController.addLike.bind(this.likeController));
-        this.router.delete('/remove',authenticateJWT, LikeRequest(LikeZodSchema), this.likeController.removeLike.bind(this.likeController));
+        this.router.post('/toggle/:postId', authenticateJWT, LikeRequest(LikeZodSchema), this.likeController.toggleLike.bind(this.likeController));
         this.router.get('/post/:postId', this.likeController.getLikesForPost.bind(this.likeController));
     }
 }

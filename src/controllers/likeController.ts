@@ -8,39 +8,20 @@ import { TYPES } from '../config/TYPES';
 export class LikeController {
     constructor(@inject(TYPES.LikeProvider) private likeProvider: LikeProvider) {}
 
-    async addLike(req: AuthRequest, res: Response) {
+    async toggleLike(req: AuthRequest, res: Response) {
         try {
-            const userId = req.user?._id;
+            const userId = req.user?._id; // Assuming user ID is stored in the request object after authentication
+            const { postId } = req.params;
             if (!userId) {
                 res.status(401).json({ message: 'Unauthorized' });
                 return;
             }
-             const { postId } = req.body;
-             const existingLike = await this.likeProvider.hasUserLiked(userId, postId);
-
-             if (existingLike) {
-                res.status(400).json({ message: 'Like already exists' });
-                return;
-             }
-             await this.likeProvider.addLike(userId, postId);
-             res.status(201).json({ message: 'Like added successfully' });
+            
+            const result = await this.likeProvider.toggleLike(userId, postId);
+            const liked = result === 'liked';
+            res.status(200).json({ message: `Post ${liked}`, postId });
         } catch (error) {
-             res.status(500).json({ message: 'Error checking like', error });
-        }
-    }
-
-    async removeLike(req: AuthRequest, res: Response) {
-        try {
-            const userId = req.user?._id;
-            if (!userId) {
-                res.status(401).json({ message: 'Unauthorized' });
-                return;
-            }
-            const { postId } = req.body;
-            await this.likeProvider.removeLike(userId, postId);
-            res.status(200).json({ message: 'Like removed successfully' });
-        } catch (error) {
-            res.status(500).json({ message: 'Error removing like', error });
+            res.status(500).json({ message: 'Error toggling like', error });
         }
     }
 
