@@ -19,7 +19,7 @@ export class LikeController {
             const postId  = req.params.postId;
             const result = await this.likeProvider.toggleLike(userId, postId);
             
-            res.status(200).json({ message: `Post ${result}`, postId });
+            res.status(200).json({ message: `Post ${result}`, postId, userId, liked: result === 'liked' });
         } catch (error) {
             res.status(500).json({ message: 'Error toggling like', error });
         }
