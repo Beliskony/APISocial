@@ -69,7 +69,7 @@ export class PostService {
                 .limit(Math.floor(limit * 0.05));
 
         // 5. Fusionner les deux listes
-        const mixedFeed = [...posts, ...populatedRandomPosts, ...selfPost]
+        const mixedFeed = [...posts, ...populatedRandomPosts]
 
         // 6. Trier les publications finales par date (facultatif)
         mixedFeed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
