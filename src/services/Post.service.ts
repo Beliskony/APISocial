@@ -38,47 +38,47 @@ export class PostService {
     }
 
     async getAllPosts(userId: string, page = 1, limit = 20): Promise<IPost[]> {
-    // 1. Trouver l'utilisateur courant et ses followers
-    const currentUser = await UserModel.findById(userId).populate('followers');
-    if (!currentUser) {
-        throw new Error("Utilisateur non trouvé");
+        const mainLimit = Math.max(1, Math.floor(limit * 0.6));
+        const randomLimit = Math.max(1, Math.floor(limit * 0.35));
+        const selfLimit = Math.max(1, Math.floor(limit * 0.05));
+        //1. Trouver les followers de l'utilisateur
+        const currentUser = await UserModel.findById(userId).populate('followers');
+        if (!currentUser) {
+            throw new Error("Utilisateur non trouvé");
+        }
+        const followedUsers = [...currentUser.followers ?? [], userId]; // Inclure l'utilisateur lui-même
+        //2. Récupérer les posts des utilisateurs suivis
+        const posts = await PostModel.find({ user: { $in: followedUsers } })
+            .populate('user', '-password -email -phoneNumber', '_id username profilePicture')
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(mainLimit) // Limite à 65% des posts
+            .exec();
+
+
+            const randomPostIds = await PostModel.aggregate([
+                 { $match: { user: { $nin: followedUsers.map(id => new mongoose.Types.ObjectId(id)) } } },
+                 { $sample: { size: randomLimit} },
+                 { $project: { _id: 1 } }, // récupère uniquement l'ID
+                ]);
+
+                const populatedRandomPosts = await PostModel.find({ _id: { $in: randomPostIds.map(post => post._id) } })
+                .populate('user', '_id username profilePicture')
+            
+
+            const selfPost = await PostModel.find({user: userId})
+                .populate('user', '_id username profilePicture')
+                .sort({ createdAt: -1})
+                .limit(selfLimit);
+
+        // 5. Fusionner les deux listes
+        const mixedFeed = [...posts, ...populatedRandomPosts, ...selfPost]
+
+        // 6. Trier les publications finales par date (facultatif)
+        mixedFeed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+        return mixedFeed;
     }
-
-    const followedUsers = [...(currentUser.followers ?? []), userId]; // Inclure soi-même
-
-    // 2. Récupérer les posts des utilisateurs suivis (≈ 60 %)
-    const posts = await PostModel.find({ user: { $in: followedUsers } })
-        .populate('user', '-password -email -phoneNumber', '_id username profilePicture')
-        .sort({ createdAt: -1 })
-        .skip((page - 1) * limit)
-        .limit(Math.max(1, Math.floor(limit * 0.6))) // Sécurisé
-        .exec();
-
-    // 3. Récupérer des posts aléatoires d'utilisateurs non suivis (≈ 35 %)
-    const randomPostIds = await PostModel.aggregate([
-        { $match: { user: { $nin: followedUsers.map(id => new mongoose.Types.ObjectId(id)) } } },
-        { $sample: { size: Math.max(1, Math.floor(limit * 0.35)) } }, // Sécurisé
-        { $project: { _id: 1 } }
-    ]);
-
-    const populatedRandomPosts = await PostModel.find({ _id: { $in: randomPostIds.map(post => post._id) } })
-        .populate('user', '_id username profilePicture');
-
-    // 4. Récupérer les posts de l'utilisateur courant (≈ 5 %)
-    const selfPosts = await PostModel.find({ user: userId })
-        .populate('user', '_id username profilePicture')
-        .sort({ createdAt: -1 })
-        .limit(Math.max(1, Math.floor(limit * 0.05))); // Sécurisé
-
-    // 5. Fusionner les 3 listes
-    const mixedFeed = [...posts, ...populatedRandomPosts, ...selfPosts];
-
-    // 6. Trier toutes les publications par date (facultatif mais recommandé)
-    mixedFeed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    return mixedFeed;
-}
-
 
     async updatePost(postId: string, userId:string,  text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost | null> {
         
