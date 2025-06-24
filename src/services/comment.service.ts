@@ -14,7 +14,7 @@ export class CommentService {
             content: content, });
 
             const savedComment = await newComment.save();
-            await savedComment.populate("user", "_id username profilePicture");
+            await savedComment.populate("user", "username profilePicture");
 
             await PostModel.findByIdAndUpdate(postId, {
                 $inc: {commentsCount: 1},
@@ -26,7 +26,7 @@ export class CommentService {
 
     
     async getCommentsByPostId(postId: string): Promise<IComment[]> {
-        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate("user", "_id username profilePicture").exec();
+        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate("user", "username profilePicture").exec();
     }
 
 
