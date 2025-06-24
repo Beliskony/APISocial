@@ -8,9 +8,9 @@ export interface IPost extends Document {
         images?: string[]; // URLs des images
         videos?: string[]; // URLs des vidéos
     };
-    likes?: mongoose.Types.ObjectId[]; // Références aux utilisateurs qui aiment le post
-    comments?:[{type: mongoose.Types.ObjectId, ref:'Comment'}];
-    commentsCount: {type: Number, default: 0}
+    likes?: Types.ObjectId[]; // Références aux utilisateurs qui aiment le post
+    comments?:Types.ObjectId[];
+    commentsCount: number;
     createdAt: Date;
     updatedAt: Date;
 
