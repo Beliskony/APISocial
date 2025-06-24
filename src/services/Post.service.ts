@@ -30,7 +30,7 @@ export class PostService {
                 //{ 'media.images': { $regex: text, $options: 'i' } }, // Recherche dans les images
                 //{ 'media.videos': { $regex: text, $options: 'i' } }, // Recherche dans les vidéos
             ],
-        }).populate('user', '_id username profilePicture')
+        }).populate('user', 'username profilePicture')
     }
 
     async getPostByUser(userId: string): Promise<IPost[]> {
@@ -46,7 +46,7 @@ export class PostService {
         const followedUsers = [...currentUser.followers ?? [], userId]; // Inclure l'utilisateur lui-même
         //2. Récupérer les posts des utilisateurs suivis
         const posts = await PostModel.find({ user: { $in: followedUsers } })
-            .populate('user', '-password -email -phoneNumber', '_id username profilePicture')
+            .populate('user', '-password -email -phoneNumber', 'username profilePicture')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(Math.floor(limit * 0.6)) // Limite à 65% des posts
@@ -60,16 +60,16 @@ export class PostService {
                 ]);
 
                 const populatedRandomPosts = await PostModel.find({ _id: { $in: randomPostIds.map(post => post._id) } })
-                .populate('user', '_id username profilePicture')
+                .populate('user', ' username profilePicture')
             
 
             const selfPost = await PostModel.find({user: userId})
-                .populate('user', '_id username profilePicture')
+                .populate('user', 'username profilePicture')
                 .sort({ createdAt: -1})
                 .limit(Math.floor(limit * 0.05));
 
         // 5. Fusionner les deux listes
-        const mixedFeed = [...posts, ...populatedRandomPosts]
+        const mixedFeed = [...posts, ...populatedRandomPosts, ...selfPost]
 
         // 6. Trier les publications finales par date (facultatif)
         mixedFeed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
