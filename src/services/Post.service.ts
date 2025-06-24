@@ -66,7 +66,7 @@ export class PostService {
             const selfPost = await PostModel.find({user: userId})
                 .populate('user', '_id username profilePicture')
                 .sort({ createdAt: -1})
-                .limit(Math.ceil(limit * 0.05));
+                .limit(Math.floor(limit * 0.05));
 
         // 5. Fusionner les deux listes
         const mixedFeed = [...posts, ...populatedRandomPosts, ...selfPost]
