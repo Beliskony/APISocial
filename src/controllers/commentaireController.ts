@@ -17,8 +17,11 @@ export class CommentController {
                 res.status(401).json({ message: 'Unauthorized' });
                 return;
             }
+
             const { content } = req.body;
             const { postId } = req.params;
+            
+           
             const comment: IComment = await this.commentProvider.addComment(postId, userId, content);
             res.status(201).json(comment);
         } catch (error) {

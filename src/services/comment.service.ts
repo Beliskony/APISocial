@@ -1,5 +1,6 @@
 import { injectable } from "inversify";
 import CommentModel, {IComment} from "../models/Comment.model";
+import PostModel from "../models/Post.model";
 
 @injectable()
 export class CommentService {
@@ -12,12 +13,19 @@ export class CommentService {
             post: postId,
             content: content, });
 
-            return await newComment.save();
+            const savedComment = await newComment.save();   
+
+            await PostModel.findByIdAndUpdate(postId, {
+                $inc: {commentsCount: 1},
+                $push: {comments: newComment._id}
+            })
+
+            return savedComment;
         }
 
     
     async getCommentsByPostId(postId: string): Promise<IComment[]> {
-        return await CommentModel.find({ postId }).sort({createdAt: 1}).populate("user", "username").exec();
+        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate("user", "username profilePicture").exec();
     }
 
 

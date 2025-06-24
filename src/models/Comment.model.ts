@@ -1,21 +1,24 @@
-import { Schema, model } from 'mongoose';
+import mongoose, { Schema, model, Types } from 'mongoose';
 
 export interface IComment {
-    user: string; // User ID celui qui a posté le commentaire
-    post: string; // Post ID lequel le commentaire est associé
+    user: Types.ObjectId; // User ID celui qui a posté le commentaire
+    post: Types.ObjectId; // Post ID lequel le commentaire est associé
     content: string; // Comment content 
     createdAt?: Date; // Optional createdAt field
+    updatedAt?: Date;
 }
 
 const commentSchema = new Schema<IComment>(
     {
         user: { 
-            type: String,
-             required: true 
+            type: mongoose.Schema.Types.ObjectId,
+            ref:'User',
+            required: true 
             },
 
         post: { 
-            type: String, 
+            type: mongoose.Schema.Types.ObjectId,
+            ref:'Post', 
             required: true 
             },
 

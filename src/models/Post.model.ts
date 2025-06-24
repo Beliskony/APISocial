@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { Types } from 'mongoose';
 
 export interface IPost extends Document {
     user: mongoose.Types.ObjectId; // Référence à l'utilisateur
@@ -8,12 +9,8 @@ export interface IPost extends Document {
         videos?: string[]; // URLs des vidéos
     };
     likes?: mongoose.Types.ObjectId[]; // Références aux utilisateurs qui aiment le post
-    comments?: {
-        userId: mongoose.Types.ObjectId; // ID de l'utilisateur qui a commenté
-        text: string; // Texte du commentaire
-        createdAt: Date; // Date de création du commentaire
-        updatedAt: Date; // Date de mise à jour du commentaire
-    }[]; // Références aux commentaires
+    comments?:[{type: mongoose.Types.ObjectId, ref:'Comment'}];
+    commentsCount: {type: Number, default: 0}
     createdAt: Date;
     updatedAt: Date;
 
@@ -46,14 +43,8 @@ const PostSchema: Schema = new Schema(
 
         likes: [{ type: mongoose.Types.ObjectId, ref: 'User', default:[] }], //
 
-        comments: [
-                {
-                    userId: { type: mongoose.Types.ObjectId, ref: 'User', required: true },
-                    text: { type: String, trim: true, required: true },
-                    createdAt: { type: Date, default: Date.now },
-                    updatedAt: { type: Date, default: Date.now },
-                },
-            ],
+        comments: [{ type: mongoose.Types.ObjectId, ref: 'Comment' }],
+        commentsCount: { type: Number, default: 0 },
     },
     {
         timestamps: true, // Ajoute automatiquement createdAt et updatedAt
