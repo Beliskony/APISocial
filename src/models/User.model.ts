@@ -22,7 +22,7 @@ const UserSchema: Schema = new Schema(
         username: { type: String, required: true, unique: true },
         email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
-        profilePicture: { type: String, default: 'https://img.icons8.com/?size=100&id=undefined&format=png&color=000000' },
+        profilePicture: { type: String, default: 'https://i.pinimg.com/736x/76/47/5e/76475ef2f299694fda13ac1b2dfbda8a.jpg' },
         phoneNumber: { type: String, unique: true, sparse: true, require:true },
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Array of User references
         posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post'}],
