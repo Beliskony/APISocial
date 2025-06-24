@@ -65,7 +65,7 @@ export class PostService {
 
             const selfPost = await PostModel.find({user: userId})
                 .populate('user', '_id username profilePicture')
-                .sort({ createAt: -1})
+                .sort({ createdAt: -1})
                 .limit(Math.ceil(limit * 0.05));
 
         // 5. Fusionner les deux listes
