@@ -14,7 +14,7 @@ export class CommentService {
             content: content, });
 
             const savedComment = await newComment.save();
-            await savedComment.populate("user", "username profilePicture");
+            await savedComment.populate({ path: 'user', select: '_id username profilePicture' });
 
             await PostModel.findByIdAndUpdate(postId, {
                 $inc: {commentsCount: 1},
@@ -40,7 +40,7 @@ export class CommentService {
             upComment.content = content;
             const saved = await upComment.save();
             
-            await saved.populate("user", "username profilePicture");
+            await saved.populate({ path: 'user', select: '_id username profilePicture' });
             return saved;
         }
 
