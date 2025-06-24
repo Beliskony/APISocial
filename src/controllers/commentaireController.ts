@@ -20,7 +20,6 @@ export class CommentController {
 
             const { content } = req.body;
             const { postId } = req.params;
-            
            
             const comment: IComment = await this.commentProvider.addComment(postId, userId, content);
             res.status(201).json(comment);

@@ -29,7 +29,6 @@ const commentSchema = new Schema<IComment>(
 
         createdAt: { 
             type: Date, 
-            default: Date.now 
         },
     },
     {

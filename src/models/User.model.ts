@@ -1,6 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import PostModel from './Post.model';
-import { ref } from 'process';
 
 export interface IUser extends Document { 
     _id: string;
@@ -23,7 +22,7 @@ const UserSchema: Schema = new Schema(
         email: { type: String, required: true, unique: true },
         password: { type: String, required: true },
         profilePicture: { type: String, default: 'https://i.pinimg.com/736x/76/47/5e/76475ef2f299694fda13ac1b2dfbda8a.jpg' },
-        phoneNumber: { type: String, unique: true, sparse: true, require:true },
+        phoneNumber: { type: String, unique: true, sparse: true, required:true },
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Array of User references
         posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post'}],
         otp: { type: String}, // OTP for verification

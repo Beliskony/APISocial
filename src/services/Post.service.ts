@@ -30,7 +30,7 @@ export class PostService {
                 //{ 'media.images': { $regex: text, $options: 'i' } }, // Recherche dans les images
                 //{ 'media.videos': { $regex: text, $options: 'i' } }, // Recherche dans les vidéos
             ],
-        }).populate('user')
+        }).populate('user', '_id username profilePicture')
     }
 
     async getPostByUser(userId: string): Promise<IPost[]> {

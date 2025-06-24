@@ -117,8 +117,13 @@ export class UserController {
             const userId = req.user?._id; // userId vient du token JWT
             const userData = req.body;
 
-            if (!userId || !userData) {
-                res.status(400).json({ message: "User ID and data are required" });
+            if (!userId) {
+                res.status(400).json({ message: "Utilisateur non authentifié" });
+                return;
+            }
+
+            if (!userData || Object.keys(userData).length === 0) {
+                res.status(400).json({ message: "Aucune donnée à mettre à jour" });
                 return;
             }
 

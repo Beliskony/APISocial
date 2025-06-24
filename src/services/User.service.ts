@@ -73,27 +73,32 @@ async toggleFollow(userId: string, targetId: string): Promise<"followed" | "unfo
 
 //mettre à jour le profil de l'utilisateur
 async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<IUser> {
-     const allowFields = ['username', 'profilePicture', 'email', 'phoneNumber', 'password'];
+  const allowedFields: (keyof IUser)[] = ['username', 'profilePicture', 'email', 'phoneNumber', 'password'];
+  const updateFields: Partial<IUser> = {};
 
-     const updateFields: Partial<IUser> = {};
-    for (const key of allowFields) {
-        if (key in updateData) {
-            if (key === 'password' && typeof updateData.password === 'string') {
-                updateData.password = await hash(updateData.password, 10);
-        } else {
-            updateFields[key as keyof IUser] = updateData[key as keyof IUser];
-     }
-        }
+  for (const field of allowedFields) {
+    if (field in updateData) {
+      if (field === 'password' && typeof updateData.password === 'string') {
+        updateFields.password = await hash(updateData.password, 10);
+      } else {
+        updateFields[field] = updateData[field];
+      }
     }
-
-    const updatedUser = await UserModel.findByIdAndUpdate(userId, {$set: updateFields}, { new: true, runValidators: true });
-
-    if (!updatedUser) {
-        throw new Error("Utilisateur non trouve");
-    }
-
-    return updatedUser;
   }
+
+  const updatedUser = await UserModel.findByIdAndUpdate(
+    userId,
+    { $set: updateFields },
+    { new: true, runValidators: true }
+  ).select('-password -phoneNumber -email'); // si tu veux toujours masquer ça
+
+  if (!updatedUser) {
+    throw new Error("Utilisateur non trouvé");
+  }
+
+  return updatedUser;
+}
+
 
   //get me 
     async getMe(userId: string): Promise<IUser | null> {
