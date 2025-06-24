@@ -122,12 +122,12 @@ describe('CommentController', () => {
                        phoneNumber: '123456789', 
                        email: 'test@example.com',
                     }, 
-                    body: { commentId: 'comment1', content: 'old', newContent: 'updated' } };
+                    body: { commentId: 'comment1', content: 'old' } };
             commentProvider.updateComment.mockResolvedValue(updatedComment);
 
             await controller.updateComment(req as Request, res as Response);
 
-            expect(commentProvider.updateComment).toHaveBeenCalledWith('comment1', 'user1', 'old', 'updated');
+            expect(commentProvider.updateComment).toHaveBeenCalledWith('comment1', 'user1', 'updated');
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.json).toHaveBeenCalledWith(updatedComment);
         });
@@ -138,7 +138,7 @@ describe('CommentController', () => {
                        phoneNumber: '123456789', 
                        email: 'test@example.com',
                     }, 
-                    body: { commentId: 'comment1', content: 'old', newContent: 'updated' } };
+                    body: { commentId: 'comment1', content: 'updated' } };
             commentProvider.updateComment.mockResolvedValue(null);
 
             await controller.updateComment(req as Request, res as Response);
@@ -153,7 +153,7 @@ describe('CommentController', () => {
                        phoneNumber: '123456789', 
                        email: 'test@example.com',
                     }, 
-                    body: { commentId: 'comment1', content: 'old', newContent: 'updated' } };
+                    body: { commentId: 'comment1', content: 'updated' } };
             commentProvider.updateComment.mockRejectedValue(new Error('fail'));
 
             await controller.updateComment(req as Request, res as Response);

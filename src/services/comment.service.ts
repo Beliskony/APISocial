@@ -21,14 +21,14 @@ export class CommentService {
     }
 
 
-    async updateComment(commentId: string, userId: string, content: string, newContent: string): Promise<IComment | null> {
+    async updateComment(commentId: string, userId: string, content: string): Promise<IComment | null> {
         const upComment = await CommentModel.findById(commentId)
 
             if (!upComment || upComment.user.toString() !== userId) {
                 throw new Error("Comment not found ou pas autoiser a modifier ce commentaire");
             }
 
-            upComment.content = newContent;
+            upComment.content = content;
             return await upComment.save();
         }
 

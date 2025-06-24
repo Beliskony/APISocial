@@ -20,12 +20,12 @@ export class CommentRouter {
     }
 
   private initializeRoutes(): void {
-    this.router.post("/create", authenticateJWT, CommentMiddleware(CreateCommentZodSchema), this.commentController.addComment.bind(this.commentController));
+    this.router.post("/create/:postId", authenticateJWT, CommentMiddleware(CreateCommentZodSchema), this.commentController.addComment.bind(this.commentController));
 
     this.router.put("/update", authenticateJWT, CommentMiddleware(UpdateCommentZodSchema), this.commentController.updateComment.bind(this.commentController));
 
     this.router.delete("/delete/:commentId", authenticateJWT, CommentMiddleware(DeleteCommentZodSchema), this.commentController.deleteComment.bind(this.commentController));
 
-    this.router.get("/:postId", this.commentController.getCommentsByPostId.bind(this.commentController));
+    this.router.get("getComment", this.commentController.getCommentsByPostId.bind(this.commentController));
   }
 }

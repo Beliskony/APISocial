@@ -15,8 +15,8 @@ export class CommentProvider {
         return await this.commentService.getCommentsByPostId(postId);
     }
 
-    async updateComment(commentId: string, userId: string, content: string, newContent: string): Promise<IComment | null> {
-        return await this.commentService.updateComment(commentId, userId, content, newContent);
+    async updateComment(commentId: string, userId: string, content: string): Promise<IComment | null> {
+        return await this.commentService.updateComment(commentId, userId, content);
     }
 
     async deleteComment(commentId: string, userId: string): Promise<boolean> {

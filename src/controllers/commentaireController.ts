@@ -17,7 +17,8 @@ export class CommentController {
                 res.status(401).json({ message: 'Unauthorized' });
                 return;
             }
-            const { postId, content } = req.body;
+            const { content } = req.body;
+            const { postId } = req.params;
             const comment: IComment = await this.commentProvider.addComment(postId, userId, content);
             res.status(201).json(comment);
         } catch (error) {
@@ -42,8 +43,8 @@ export class CommentController {
                 res.status(401).json({ message: 'Unauthorized' });
                 return;
             }
-            const { commentId, content, newContent } = req.body;
-            const updatedComment: IComment | null = await this.commentProvider.updateComment(commentId, userId, content, newContent);
+            const { commentId, content } = req.body;
+            const updatedComment: IComment | null = await this.commentProvider.updateComment(commentId, userId, content);
             if (!updatedComment) {
                  res.status(404).json({ message: 'Comment not found' });
                  return;
