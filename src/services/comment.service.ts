@@ -13,11 +13,12 @@ export class CommentService {
             post: postId,
             content: content, });
 
-            const savedComment = await newComment.save();   
+            const savedComment = await newComment.save();
+            await savedComment.populate("user", "username profilePicture");
 
             await PostModel.findByIdAndUpdate(postId, {
                 $inc: {commentsCount: 1},
-                $push: {comments: newComment._id}
+                $push: {comments: savedComment._id}
             })
 
             return savedComment;
@@ -37,7 +38,10 @@ export class CommentService {
             }
 
             upComment.content = content;
-            return await upComment.save();
+            const saved = await upComment.save();
+            
+            await saved.populate("user", "username profilePicture");
+            return saved;
         }
 
     async deleteComment(commentId: string, userId: string): Promise<boolean> {
