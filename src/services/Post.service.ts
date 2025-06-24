@@ -49,7 +49,7 @@ export class PostService {
             .populate('user', '-password -email -phoneNumber', '_id username profilePicture')
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
-            .limit(Math.floor(limit * 0.65)) // Limite à 65% des posts
+            .limit(Math.floor(limit * 0.6)) // Limite à 65% des posts
             .exec();
 
 
@@ -63,8 +63,13 @@ export class PostService {
                 .populate('user', '_id username profilePicture')
             
 
+            const selfPost = await PostModel.find({user: userId})
+                .populate('user', '_id username profilePicture')
+                .sort({ createAt: -1})
+                .limit(Math.ceil(limit * 0.05));
+
         // 5. Fusionner les deux listes
-        const mixedFeed = [...posts, ...populatedRandomPosts]
+        const mixedFeed = [...posts, ...populatedRandomPosts, ...selfPost]
 
         // 6. Trier les publications finales par date (facultatif)
         mixedFeed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
