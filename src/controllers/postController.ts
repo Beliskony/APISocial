@@ -47,7 +47,12 @@ export class PostController {
             const posts = await this.postProvider.getAllPosts(userId, page, limit);
              res.status(200).json(posts);
         } catch (error) {
-             res.status(500).json({ message: 'Error fetching posts', error });
+              console.error("❌ Erreur réelle dans getAllPosts:", error);
+   res.status(500).json({
+    message: 'Error fetching posts',
+    error: error instanceof Error ? error.message : error,
+  });
+  return;
         }
     }
 
