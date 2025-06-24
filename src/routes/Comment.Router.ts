@@ -26,6 +26,6 @@ export class CommentRouter {
 
     this.router.delete("/delete/:commentId", authenticateJWT, CommentMiddleware(DeleteCommentZodSchema), this.commentController.deleteComment.bind(this.commentController));
 
-    this.router.get("getComment", this.commentController.getCommentsByPostId.bind(this.commentController));
+    this.router.get("/getComment/:postId", this.commentController.getCommentsByPostId.bind(this.commentController));
   }
 }
