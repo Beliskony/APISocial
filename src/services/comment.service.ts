@@ -26,7 +26,7 @@ export class CommentService {
 
     
     async getCommentsByPostId(postId: string): Promise<IComment[]> {
-        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate("user", "username profilePicture").exec();
+        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate({ path: 'user', select: '_id username profilePicture' }).exec();
     }
 
 
