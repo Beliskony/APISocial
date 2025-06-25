@@ -74,10 +74,19 @@ export class PostService {
         // 5. Fusionner les deux listes
         const mixedFeed = [...posts, ...populatedRandomPosts, ...selfPost]
 
-        // 6. Trier les publications finales par date (facultatif)
-        mixedFeed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        // 6. Trier les publications finales aleatoire (facultatif)
+        function Melange<T>(array: T[]) {
+            const tableau = [...array];
+            for (let i = array.length -1; i > 0; i--){
+                const j =Math.floor(Math.random() * (i+1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array
+        }
 
-        return mixedFeed;
+        const aleatoire = Melange(mixedFeed);
+
+        return aleatoire;
     }
 
     async updatePost(postId: string, userId:string,  text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost | null> {
