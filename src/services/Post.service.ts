@@ -30,7 +30,7 @@ export class PostService {
                 //{ 'media.images': { $regex: text, $options: 'i' } }, // Recherche dans les images
                 //{ 'media.videos': { $regex: text, $options: 'i' } }, // Recherche dans les vidéos
             ],
-        }).populate({ path: 'user', select: '_id username profilePicture' })
+        }).populate('user', 'username profilePicture')
     }
 
     async getPostByUser(userId: string): Promise<IPost[]> {
@@ -74,19 +74,10 @@ export class PostService {
         // 5. Fusionner les deux listes
         const mixedFeed = [...posts, ...populatedRandomPosts, ...selfPost]
 
-        // 6. Trier les publications finales aleatoire (facultatif)
-        function Melange<T>(array: T[]) {
-            const tableau = [...array];
-            for (let i = array.length -1; i > 0; i--){
-                const j =Math.floor(Math.random() * (i+1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array
-        }
+        // 6. Trier les publications finales par date (facultatif)
+        mixedFeed.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-        const aleatoire = Melange(mixedFeed);
-
-        return aleatoire;
+        return mixedFeed;
     }
 
     async updatePost(postId: string, userId:string,  text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost | null> {
