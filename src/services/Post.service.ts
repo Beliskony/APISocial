@@ -49,7 +49,7 @@ export class PostService {
         const followedUsers = [...currentUser.followers ?? [], userId]; // Inclure l'utilisateur lui-même
         //2. Récupérer les posts des utilisateurs suivis
         const posts = await PostModel.find({ user: { $in: followedUsers } })
-            .populate({ path: 'user', select: '_id username profilePicture' })
+            .populate( 'user', '_id username profilePicture' )
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(mainLimit) // Limite à 65% des posts
@@ -63,11 +63,11 @@ export class PostService {
                 ]);
 
                 const populatedRandomPosts = await PostModel.find({ _id: { $in: randomPostIds.map(post => post._id) } })
-                .populate({ path: 'user', select: '_id username profilePicture' })
+                .populate( 'user', '_id username profilePicture' )
             
 
             const selfPost = await PostModel.find({user: userId})
-                .populate({ path: 'user', select: '_id username profilePicture' })
+                .populate( 'user', '_id username profilePicture' )
                 .sort({ createdAt: -1})
                 .limit(selfLimit);
 
