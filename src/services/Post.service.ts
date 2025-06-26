@@ -9,17 +9,19 @@ export class PostService {
 
     async createPost(userId: string, text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost> {
         const newPost = new PostModel ({
-            user: new mongoose.Types.ObjectId(userId),
+            user: userId,
             text,
             media,
             createdAt: new Date(),
             updatedAt: new Date(),
         });
         const savedPost = await newPost.save();
+        await savedPost.populate('user', '_id username email profilePicture');
 
         // Logique pour mettre à jour le nombre de posts de l'utilisateur
         await UserModel.findByIdAndUpdate(userId, {$push: { posts: savedPost._id }}, { new: true });
         return savedPost;
+        
     }
 
 

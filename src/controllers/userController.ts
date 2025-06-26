@@ -14,9 +14,17 @@ export class UserController {
     constructor(@inject(TYPES.UserProvider) private userProvider: UserProvider) {}
 
     private generateToken(user: any): string {
+        console.log("🧪 Secret utilisé pour le token :", user);
         return jwt.sign(
-            { _id: user._id, username: user.username, phoneNumber: user.phoneNumber, email: user.email, profilePicture: user.profilePicture, posts: user.posts, followers: user.followers },
-            process.env.JWT_SECRET || "your_secret_key",
+            { _id: user._id,
+              username: user.username, 
+              phoneNumber: user.phoneNumber, 
+              email: user.email, 
+              profilePicture: user.profilePicture, 
+              posts: user.posts, 
+              followers: user.followers 
+            },
+            process.env.JWT_SECRET || "monSupercodeSecretAxel123456@",
             { expiresIn: "30d" }
         );
     }

@@ -22,7 +22,7 @@ export class PostRouter {
     }
 
     private initializeRoutes(): void {
-        this.router.post("/create/", authenticateJWT, CreatePostRequest(PostZodSchema), this.postController.createPost.bind(this.postController));
+        this.router.post("/create", authenticateJWT, CreatePostRequest(PostZodSchema), this.postController.createPost.bind(this.postController));
         this.router.delete("/delete/:postId", authenticateJWT, DeletePostMiddleware(DeletePostSchema), this.postController.deletePost.bind(this.postController));
         this.router.patch("/update/:postId", authenticateJWT, UpdatePostMiddleware(PostUpdateZodSchema), this.postController.updatePost.bind(this.postController));
         this.router.get("/searchPost", this.postController.getPosts.bind(this.postController));
