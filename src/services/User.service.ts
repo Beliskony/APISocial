@@ -33,7 +33,7 @@ async createUser (user: IUser): Promise<IUser> {
 
      const searchCriteria = isEmail ? { email: identifiant } : { phoneNumber: identifiant };
     
-    const user = await UserModel.findOne( searchCriteria ).select("-phoneNumber -email").populate('posts');
+    const user = await UserModel.findOne( searchCriteria ).populate('posts');
     if (!user){
         throw new Error("Utilisateur non trouve");
     }
@@ -90,7 +90,7 @@ async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<IUs
     userId,
     { $set: updateFields },
     { new: true, runValidators: true }
-  ).select('-password -phoneNumber -email'); // si tu veux toujours masquer ça
+  ).select('-password'); // si tu veux toujours masquer ça
 
   if (!updatedUser) {
     throw new Error("Utilisateur non trouvé");
@@ -103,9 +103,9 @@ async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<IUs
   //get me 
     async getMe(userId: string): Promise<IUser | null> {
         const user = await UserModel.findById(userId)
-            .select("-password -phoneNumber -email") 
+            .select("-password") 
             .populate('posts', '-user') // Exclure le champ 'user' des posts
-            .populate('followers', '-password -phoneNumber -email'); // Exclure les champs sensibles des followers
+            .populate('followers', '-password'); // Exclure les champs sensibles des followers
         return user;
     }
 

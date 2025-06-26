@@ -70,6 +70,7 @@ describe('UserController - loginUser', () => {
       id: fakeUser._id,
       username: fakeUser.username,
       email: fakeUser.email,
+      phoneNumber: fakeUser.phoneNumber,
       profilePicture: fakeUser.profilePicture,
       posts: fakeUser.posts,
       followers: fakeUser.followers,

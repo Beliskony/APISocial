@@ -76,6 +76,7 @@ export class UserController {
                 id: user?._id,
                 username: user?.username,
                 email: user?.email,
+                phoneNumber: user?.phoneNumber,
                 profilePicture: user?.profilePicture,
                 posts: user?.posts,
                 followers: user?.followers,
