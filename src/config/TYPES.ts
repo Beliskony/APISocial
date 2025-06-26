@@ -1,3 +1,4 @@
+
 // src/config/TYPES.ts
 export const TYPES = {
     // Services
@@ -28,4 +29,13 @@ export const TYPES = {
     PostRouter: Symbol.for("PostRouter"),
     CommentRouter: Symbol.for("CommentRouter"),
     LikeRouter: Symbol.for("LikeRouter"),
+
+
+
+
+    //Admin Only
+    AdminService: Symbol.for("AdminService"),
+    AdminProvider: Symbol.for("AdminProvider"),
+    AdminController: Symbol.for("AdminController"),
+    AdminRouter: Symbol.for("AdminRouter"),
   };

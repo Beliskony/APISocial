@@ -25,7 +25,7 @@ export class UserRouter {
 
     this.router.post("/login",loginUser(LoginZodSchema), this.userController.loginUser.bind(this.userController));
 
-    this.router.post("/follow/:targetId", authenticateJWT, userValidateRequest(FollowZodSchema), this.userController.toggleFollow.bind(this.userController));
+    this.router.post("/follow/:targetId", authenticateJWT, this.userController.toggleFollow.bind(this.userController));
 
     this.router.put("/profile", authenticateJWT, updateUserRequest(UpdateProfileZodSchema), this.userController.updateUserProfile.bind(this.userController));
 
