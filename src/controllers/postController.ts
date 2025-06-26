@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { inject } from 'inversify';
 import { PostProvider } from '../providers/Post.provider';
 import { AuthRequest } from '../middlewares/Auth.Types';
-import { IPost } from '../models/Post.model';
+import PostModel, { IPost } from '../models/Post.model';
 import { TYPES } from '../config/TYPES';
 
 
@@ -18,7 +18,16 @@ export class PostController {
             }
             const { text, media } = req.body;
             const post: IPost = await this.postProvider.createPost(userId, text, media);
-             res.status(201).json(post);
+            const fullPost = await PostModel
+                    .findById(post._id)
+                    .populate('user', '_id username email profilePicture')
+                    .exec()
+             
+            if (!fullPost) {
+                res.status(500).json({ message: 'Post saved but failed to populate user' });
+                return;
+            }
+             res.status(201).json(fullPost);
         } catch (error) {
              res.status(500).json({ message: 'Erreur de creation du post', error });
         }
@@ -28,6 +37,7 @@ export class PostController {
         try {
             const {text} = req.query;
             const posts: IPost[] | null = await this.postProvider.getPosts(text as string);
+            
              res.status(200).json(posts);
         } catch (error) {
              res.status(500).json({ message: 'Error fetching posts', error });
