@@ -9,7 +9,7 @@ export class PostService {
 
     async createPost(userId: string, text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost> {
         const newPost = new PostModel ({
-            user: userId,
+            user: new mongoose.Types.ObjectId(userId),
             text,
             media,
             createdAt: new Date(),
