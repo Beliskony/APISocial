@@ -8,6 +8,7 @@ export interface IStoryContent {
 export interface IStory extends Document {
     userId: mongoose.Types.ObjectId; // Référence à l'utilisateur qui a créé la story
     content: IStoryContent; // Contenu de la story
+    viewedBy: mongoose.Types.ObjectId[];
     createdAt: Date; // Date de création de la story
     expiresAt: Date; // Date d'expiration de la story (24h après la création)
 }
@@ -22,6 +23,7 @@ const StorySchema: Schema = new Schema<IStory>({
         },
         data: { type: String, required: true }, // URL du fichier
     },
+    viewedBy:[{ type: Schema.Types.ObjectId, ref: 'User'}],
     createdAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true, default: () => new Date(Date.now() + 24 * 60 * 60 * 1000) }, // 24h après la création
 });

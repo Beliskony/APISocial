@@ -27,5 +27,6 @@ export class StoryRouter {
         this.router.delete("/delete/:story", authenticateJWT, StoryMiddleware(DeleteStoryZodSchema), this.storyController.deleteExpiredStories.bind(this.storyController));
         this.router.get("/expire", this.storyController.deleteExpiredStories.bind(this.storyController));
         this.router.get("/getFollowersStory", authenticateJWT, StoryMiddleware(StoryZodSchema), this.storyController.getStoryOfFollowers.bind(this.storyController));
+        this.router.get("/countViews", authenticateJWT, this.storyController.viewStoryAndGetCount.bind(this.storyController))
     }
 }

@@ -47,6 +47,24 @@ export class StoryController {
     res.status(204).send(); // Sans contenu
   }
 
+  async viewStoryAndGetCount(req: AuthRequest, res: Response){
+    try {
+      const userId = req.user?._id;
+        if (!userId) {
+            res.status(401).json({ message: "Utilisateur non authentifié" });
+            return;
+        }
+
+      const { storyId } = req.params;
+
+      const count = await this.storyProvider.viewStoryAndGetCount(storyId, userId)
+      res.status(200).json({ views: count});
+    } catch (error) {
+       console.error("Erreur lors du comptage des vues", error);
+       res.status(500).json({ message: "Erreur lors du comptage des vues" });
+    }
+  }
+
   async deleteUserStory(req: AuthRequest, res: Response) {
     try {
         const { storyId } = req.params;

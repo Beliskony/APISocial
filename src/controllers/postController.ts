@@ -10,24 +10,16 @@ export class PostController {
     constructor( @inject(TYPES.PostProvider) private postProvider: PostProvider) {}
 
     async createPost(req: AuthRequest, res: Response): Promise<void> {
-        try {
-            const userId = req.user?._id;
-            if (!userId) {
+        const userId = req.user?._id;
+        if (!userId) {
                 res.status(401).json({ message: 'Unauthorized' });
                 return;
             }
-            const { text, media } = req.body;
-            const post: IPost = await this.postProvider.createPost(userId, text, media);
-            const fullPost = await PostModel
-                    .findById(post._id)
-                    .populate('user', '_id username email profilePicture')
-                    .exec()
-             
-            if (!fullPost) {
-                res.status(500).json({ message: 'Post saved but failed to populate user' });
-                return;
-            }
-             res.status(201).json(fullPost);
+        const { text, media } = req.body;
+
+        try {
+            const post = await this.postProvider.createPost(userId, text, media);
+             res.status(201).json(post);
         } catch (error) {
              res.status(500).json({ message: 'Erreur de creation du post', error });
         }

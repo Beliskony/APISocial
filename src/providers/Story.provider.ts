@@ -22,6 +22,10 @@ export class StoryProvider {
         return this.storyService.deleteExpiredStories();
     }
 
+    async viewStoryAndGetCount(storyId: string, userId: string): Promise<number> {
+        return this.storyService.viewStoryAndGetCount(storyId, userId);
+    }
+
     async deleteUserStory(storyId: string, userId: string): Promise<void> {
         return this.storyService.deleteUserStory(storyId, userId);
     }

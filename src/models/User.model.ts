@@ -9,6 +9,7 @@ export interface IUser extends Document {
     profilePicture?: string;
     phoneNumber?: string;
     followers?: mongoose.Types.ObjectId[];
+    stories?: mongoose.Types.ObjectId[];
     otp?: string;
     otpExpires?:number;
     createdAt?: Date;
@@ -25,6 +26,7 @@ const UserSchema: Schema = new Schema(
         phoneNumber: { type: String, unique: true, sparse: true, required:true },
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // Array of User references
         posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post'}],
+        stories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Story' }],
         otp: { type: String}, // OTP for verification
         otpExpires: { type: Number }, // Expiration time for OTP
     },

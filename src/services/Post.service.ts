@@ -12,8 +12,6 @@ export class PostService {
             user: userId,
             text,
             media,
-            createdAt: new Date(),
-            updatedAt: new Date(),
         });
         const savedPost = await newPost.save();
         await savedPost.populate('user', '_id username email profilePicture');
@@ -48,6 +46,7 @@ export class PostService {
     // 1. Posts des utilisateurs suivis
     const followedPosts = await PostModel.find({ user: { $in: followedUserIds } })
         .populate('user', '_id username profilePicture')
+        .populate('comments.user', '_id username profilePicture')
         .sort({ createdAt: -1 })
         .limit(Math.floor(limit * 0.6));
 
@@ -58,13 +57,15 @@ export class PostService {
         { $project: { _id: 1 } },
     ]);
     const randomPosts = await PostModel.find({ _id: { $in: randomPostIds.map(p => p._id) } })
-        .populate('user', '_id username profilePicture');
+        .populate('user', '_id username profilePicture')
+        .populate('comments.user', '_id username profilePicture')
 
     // 3. Posts personnels
     const selfPosts = await PostModel.find({ user: userId })
         .sort({ createdAt: -1 })
         .limit(Math.floor(limit * 0.05))
-        .populate('user', '_id username profilePicture');
+        .populate('user', '_id username profilePicture')
+        .populate('comments.user', '_id username profilePicture')
 
     // 4. Fusion sans doublon
     const allPostsMap = new Map<string, IPost>();
