@@ -19,14 +19,12 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
 
   try {
     const decoded = Jwt.verify(token, SECRET) as JwtPayload | string; // Vérifier le token
-  
     if (typeof decoded === 'string') {
       res.status(401).json({ message: 'Token invalide' });
       return;
     }
 
     req.user = decoded as AuthUser // Ajouter les informations de l'utilisateur à la requête
-    console.log('Token décodé:', decoded);
     next();
   } catch (error) {
     res.status(401).json({ message: 'Token invalide ou expire' });
