@@ -26,8 +26,7 @@ export class CommentService {
 
     
     async getCommentsByPostId(postId: string): Promise<IComment[]> {
-        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate({path: 'comment', populate: { path: 'user', select: 'username profilePicture' },
-        }).exec();
+        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate( 'user',  'username profilePicture' ).exec();
     }
 
 
@@ -52,6 +51,11 @@ export class CommentService {
             }
 
             await CommentModel.findByIdAndDelete(commentId);
+            await PostModel.findByIdAndUpdate(delComment.post, {
+                $inc: {commentsCount: -1},
+                $pull: {comments: delComment._id}
+                });
+
             return true
         }
     
