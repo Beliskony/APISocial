@@ -1,8 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import {  Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
+import { AuthRequest } from './Auth.Types';
 
 export const CommentMiddleware = (schema: ZodSchema) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
     const result = schema.safeParse(req.body);
 
     if (!result.success) {

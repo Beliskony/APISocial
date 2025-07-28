@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+import { AuthRequest } from './Auth.Types';
 import { ZodSchema } from 'zod';
 
 const StoryMiddleware = (schema: ZodSchema) => {
-    return async (req: Request, res: Response, next: NextFunction) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
             if (['POST', 'Delete'].includes(req.method.toUpperCase())) {
                 await schema.parseAsync(req.body);

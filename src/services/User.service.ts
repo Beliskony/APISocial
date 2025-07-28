@@ -1,6 +1,7 @@
 import UserModel, { IUser } from "../models/User.model";
 import { hash, compare } from "bcryptjs";
 import {injectable} from "inversify";
+import NotificationsModel from "../models/Notifications.model";
 
 
 
@@ -67,6 +68,14 @@ async toggleFollow(userId: string, targetId: string): Promise<"followed" | "unfo
         // Follow
         target.followers?.push(userId as any);
         await target.save();
+        // Create a notification for the followed user
+        await NotificationsModel.create({
+            recipient: targetId,
+            sender: userId,
+            type: 'follow',
+            content: `Vous avez un nouveau follower.`,
+            isRead: false,
+        });
         return "followed";
     }
 }

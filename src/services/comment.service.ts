@@ -1,6 +1,8 @@
 import { injectable } from "inversify";
 import CommentModel, {IComment} from "../models/Comment.model";
 import PostModel from "../models/Post.model";
+import NotificationsModel from "../models/Notifications.model";
+import UserModel from "../models/User.model";
 
 @injectable()
 export class CommentService {
@@ -16,10 +18,26 @@ export class CommentService {
             const savedComment = await newComment.save();
             await savedComment.populate( 'user', '_id username profilePicture' );
 
-            await PostModel.findByIdAndUpdate(postId, {
+           const post = await PostModel.findByIdAndUpdate(postId, {
                 $inc: {commentsCount: 1},
                 $push: {comments: savedComment._id}
-            })
+            }).populate('user', '_id username profilePicture');
+
+            // creation de notification pour la chaque commentaire fait par un utilisateur
+            if (post && post.user._id.toString() !== userId) {
+                const commentUser = await UserModel.findById(userId).select('username');
+                if (!commentUser) throw new Error('User not found');
+
+                const notification = new NotificationsModel({
+                    recipient: post.user._id,
+                    sender: userId,
+                    type: 'comment',
+                    post: postId,
+                    content: `${commentUser.username} a commenté votre publication.`,
+                    isRead: false,
+                });
+                await notification.save();
+            }
 
             return savedComment;
         }

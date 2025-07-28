@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
+import { AuthRequest } from "./Auth.Types";
 import { ZodSchema } from "zod";
 
 export const CreatePostRequest = (schema: ZodSchema) => {
-    return (req: Request, res: Response, next: NextFunction) => {
+    return (req: AuthRequest, res: Response, next: NextFunction) => {
         const result = schema.safeParse(req.body);
        
         if (!result.success) {

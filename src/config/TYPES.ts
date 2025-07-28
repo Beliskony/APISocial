@@ -8,6 +8,7 @@ export const TYPES = {
     CommentService: Symbol.for("CommentService"),
     StoryService: Symbol.for("StoryService"),
     LikeService: Symbol.for("LikeService"),
+    NotificationsService: Symbol.for("NotificationsService"),
     
     // Providers
     UserProvider: Symbol.for("UserProvider"),
@@ -15,6 +16,7 @@ export const TYPES = {
     LikeProvider: Symbol.for("LikeProvider"),
     PostProvider: Symbol.for("PostProvider"),
     CommentProvider: Symbol.for("CommentProvider"),
+    NotificationsProvider: Symbol.for("NotificationsProvider"),
     
     // Controllers
     UserController: Symbol.for("UserController"),
@@ -22,6 +24,7 @@ export const TYPES = {
     PostController: Symbol.for("PostController"),
     LikeController: Symbol.for("LikeController"),
     StoryController: Symbol.for("StoryController"),
+    NotificationsController: Symbol.for("NotificationsController"),
     
     // Routers
     UserRouter: Symbol.for("UserRouter"),
@@ -29,6 +32,7 @@ export const TYPES = {
     PostRouter: Symbol.for("PostRouter"),
     CommentRouter: Symbol.for("CommentRouter"),
     LikeRouter: Symbol.for("LikeRouter"),
+    NotificationsRouter: Symbol.for("NotificationsRouter"),
 
 
 

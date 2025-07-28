@@ -4,11 +4,14 @@ import { UserService } from "../services/User.service";
 import { CommentService } from "../services/comment.service";
 import { StoryService } from "../services/Story.service";
 import { LikeService } from "../services/Like.service";
+import { NotificationsService } from "../services/Notifications.Service";
 import { LikeProvider } from "../providers/Like.provider";
 import { UserProvider } from "../providers/User.provider";
 import { StoryProvider } from "../providers/Story.provider";
+import { NotificationsProvider } from "../providers/Notifications.provider";
 import { UserController } from "../controllers/userController";
 import { CommentController } from "../controllers/commentaireController";
+import { NotificationsController } from "../controllers/notificationsController";
 import { PostController } from "../controllers/postController";
 import { LikeController } from "../controllers/likeController";
 import { PostProvider } from "../providers/Post.provider";
@@ -19,6 +22,7 @@ import { CommentRouter } from "../routes/Comment.Router";
 import { PostRouter } from "../routes/Post.Router";
 import { LikeRouter } from "../routes/Like.Router";
 import { StoryRouter } from "../routes/Story.Router";
+import { NotificationsRouter } from "../routes/Notifications.Router";
 import { AdminService } from "../admin/adminService/Admin.Service";
 import { AdminProvider } from "../admin/adminProvider/Admin.Provider";
 import { AdminRouter } from "../admin/adminRoute/AdminRoute";
@@ -34,6 +38,7 @@ container.bind(TYPES.UserService).to(UserService).inSingletonScope();
 container.bind(TYPES.CommentService).to(CommentService).inSingletonScope();
 container.bind(TYPES.StoryService).to(StoryService).inSingletonScope();
 container.bind(TYPES.LikeService).to(LikeService).inSingletonScope();
+container.bind(TYPES.NotificationsService).to(NotificationsService).inSingletonScope();
 
 
 // providers
@@ -42,6 +47,7 @@ container.bind(TYPES.StoryProvider).to(StoryProvider).inSingletonScope();
 container.bind(TYPES.LikeProvider).to(LikeProvider).inSingletonScope();
 container.bind(TYPES.PostProvider).to(PostProvider).inSingletonScope();
 container.bind(TYPES.CommentProvider).to(CommentProvider).inSingletonScope();
+container.bind(TYPES.NotificationsProvider).to(NotificationsProvider).inSingletonScope();
 
 
 // controllers
@@ -50,6 +56,7 @@ container.bind(TYPES.CommentController).to(CommentController).inSingletonScope()
 container.bind(TYPES.PostController).to(PostController).inSingletonScope();
 container.bind(TYPES.LikeController).to(LikeController).inSingletonScope();
 container.bind(TYPES.StoryController).to(StoryController).inSingletonScope();
+container.bind(TYPES.NotificationsController).to(NotificationsController).inSingletonScope();
 
 // routes
 container.bind(TYPES.UserRouter).to(UserRouter).inSingletonScope();
@@ -57,10 +64,12 @@ container.bind(TYPES.CommentRouter).to(CommentRouter).inSingletonScope();
 container.bind(TYPES.PostRouter).to(PostRouter).inSingletonScope();
 container.bind(TYPES.LikeRouter).to(LikeRouter).inSingletonScope();
 container.bind(TYPES.StoryRouter).to(StoryRouter).inSingletonScope();
+container.bind(TYPES.NotificationsRouter).to(NotificationsRouter).inSingletonScope();
 
 
 
-// admin
+// admin only
+// services, providers, controllers, routers
 container.bind<AdminController>(TYPES.AdminController).to(AdminController).inSingletonScope();
 container.bind<AdminService>(TYPES.AdminService).to(AdminService).inSingletonScope();
 container.bind<AdminProvider>(TYPES.AdminProvider).to(AdminProvider).inSingletonScope();

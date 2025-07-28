@@ -1,12 +1,16 @@
 import { Request, Response } from 'express';
 import { inject,injectable } from 'inversify';
 import { LikeProvider } from '../providers/Like.provider';
+import { NotificationsProvider } from '../providers/Notifications.provider';
 import { AuthRequest } from '../middlewares/Auth.Types';
 import { TYPES } from '../config/TYPES';
 
 @injectable()
 export class LikeController {
-    constructor(@inject(TYPES.LikeProvider) private likeProvider: LikeProvider) {}
+    constructor(
+        @inject(TYPES.LikeProvider) private likeProvider: LikeProvider,
+        @inject(TYPES.NotificationsProvider) private notificationsProvider: NotificationsProvider
+    ) {}
 
     async toggleLike(req: AuthRequest, res: Response) {
         try {

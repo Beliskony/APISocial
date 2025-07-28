@@ -1,9 +1,10 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
+import { AuthRequest } from "./Auth.Types";
 import { ZodSchema } from "zod";
 import PostModel from "../models/Post.model";
 
 export const DeletePostMiddleware = (schema: ZodSchema) => {
-    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         try {
             // ✅ Combine params dans un objet à valider
             const dataToValidate = {
