@@ -167,6 +167,30 @@ export class UserController {
         }
     }
 
+    //get userById
+    async getUserById(req: Request, res: Response): Promise<void> {
+        try {
+            const { userId } = req.params;
+
+            if (!userId) {
+                res.status(400).json({ message: "User ID is required" });
+                return;
+            }
+
+            const user = await this.userProvider.getUserById(userId);
+            if (!user) {
+                res.status(404).json({ message: "User not found" });
+                return;
+            }
+
+            // Exclure le mot de passe du profil
+            const { password, ...userWithoutPassword } = user.toObject();
+            res.status(200).json(userWithoutPassword);
+        } catch (error: any) {
+            res.status(400).json({ message: error.message });
+        }
+    }
+
 }
     
     

@@ -30,5 +30,7 @@ export class UserRouter {
     this.router.put("/profile", authenticateJWT, updateUserRequest(UpdateProfileZodSchema), this.userController.updateUserProfile.bind(this.userController));
 
     this.router.get("/me", authenticateJWT ,this.userController.getMe.bind(this.userController));
+
+    this.router.get("profile/:userId",authenticateJWT, this.userController.getUserById.bind(this.userController));
   }
 }

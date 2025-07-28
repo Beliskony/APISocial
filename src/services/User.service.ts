@@ -118,4 +118,14 @@ async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<IUs
         return user;
     }
 
+  
+  //get userById
+    async getUserById(userId: string): Promise<IUser | null> {
+        const user = await UserModel.findById(userId)
+            .select("-password") 
+            .populate('posts', '-user') // Exclure le champ 'user' des posts
+            .populate('followers', '-password'); // Exclure les champs sensibles des followers
+        return user;
+    }
+
 }

@@ -33,4 +33,8 @@ export class UserProvider {
         return this.userService.getMe(userId);
     }
 
+    async getUserById(userId: string): Promise<IUser | null> {
+        return this.userService.getUserById(userId);
+    }
+
 }
