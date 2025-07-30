@@ -18,14 +18,15 @@ export class CommentService {
             const savedComment = await newComment.save();
             await savedComment.populate( 'user', '_id username profilePicture' );
 
-           const post = await PostModel.findByIdAndUpdate(postId, {
+           await PostModel.findByIdAndUpdate(postId, {
                 $inc: {commentsCount: 1},
                 $push: {comments: savedComment._id}
-            }).populate('user', '_id username profilePicture');
+            });
 
             // creation de notification pour la chaque commentaire fait par un utilisateur
+            const post = await PostModel.findById(postId).populate('user', '_id username profilePicture');
             if (post && post.user._id.toString() !== userId) {
-                const commentUser = await UserModel.findById(userId).select('username');
+                const commentUser = await UserModel.findById(userId).select('username profilePicture');
                 if (!commentUser) throw new Error('User not found');
 
                 const notification = new NotificationsModel({
@@ -44,14 +45,18 @@ export class CommentService {
 
     
     async getCommentsByPostId(postId: string): Promise<IComment[]> {
-        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate( 'user',  'username profilePicture' ).exec();
+        return await CommentModel.find({ post: postId }).sort({createdAt: 1}).populate({path:'user', select:'_id username profilePicture'}).exec();
     }
 
 
     async updateComment(commentId: string, userId: string, content: string): Promise<IComment | null> {
         const upComment = await CommentModel.findById(commentId)
 
-            if (!upComment || upComment.user.toString() !== userId) {
+            if (!upComment) {
+                throw new Error("Comment not found");
+            }
+
+            if (upComment.user.toString() !== userId) {
                 throw new Error("Comment not found ou pas autoiser a modifier ce commentaire");
             }
 
