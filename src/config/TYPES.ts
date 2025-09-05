@@ -9,6 +9,7 @@ export const TYPES = {
     StoryService: Symbol.for("StoryService"),
     LikeService: Symbol.for("LikeService"),
     NotificationsService: Symbol.for("NotificationsService"),
+    MediaService: Symbol.for('MediaService'),
     
     // Providers
     UserProvider: Symbol.for("UserProvider"),
@@ -25,6 +26,8 @@ export const TYPES = {
     LikeController: Symbol.for("LikeController"),
     StoryController: Symbol.for("StoryController"),
     NotificationsController: Symbol.for("NotificationsController"),
+    MediaController: Symbol.for('MediaController'),
+  
     
     // Routers
     UserRouter: Symbol.for("UserRouter"),
@@ -33,6 +36,7 @@ export const TYPES = {
     CommentRouter: Symbol.for("CommentRouter"),
     LikeRouter: Symbol.for("LikeRouter"),
     NotificationsRouter: Symbol.for("NotificationsRouter"),
+    MediaRouter: Symbol.for("MediaRouter"),
 
 
 

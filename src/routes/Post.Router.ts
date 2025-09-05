@@ -9,6 +9,8 @@ import { UpdatePostMiddleware } from "../middlewares/UpdatePostMiddleware";
 import { PostZodSchema } from "../schemas/Post.ZodSchema";
 import { PostUpdateZodSchema } from "../schemas/Update.PostZodschema";
 import { authenticateJWT } from "../middlewares/auth";
+import { parseFormJson } from "../middlewares/media-form-data";
+import { formParserMedia } from "../middlewares/form-data";
 
 @injectable()
 export class PostRouter {
@@ -22,9 +24,9 @@ export class PostRouter {
     }
 
     private initializeRoutes(): void {
-        this.router.post("/create", authenticateJWT, CreatePostRequest(PostZodSchema), this.postController.createPost.bind(this.postController));
+        this.router.post("/create", authenticateJWT,formParserMedia ,parseFormJson, CreatePostRequest(PostZodSchema), this.postController.createPost.bind(this.postController));
         this.router.delete("/delete/:postId", authenticateJWT, DeletePostMiddleware(DeletePostSchema), this.postController.deletePost.bind(this.postController));
-        this.router.patch("/update/:postId", authenticateJWT, UpdatePostMiddleware(PostUpdateZodSchema), this.postController.updatePost.bind(this.postController));
+        this.router.patch("/update/:postId", authenticateJWT, formParserMedia, parseFormJson, UpdatePostMiddleware(PostUpdateZodSchema), this.postController.updatePost.bind(this.postController));
         this.router.get("/searchPost", this.postController.getPosts.bind(this.postController));
         this.router.get("/getPostsByUser", authenticateJWT, this.postController.getPostsByUser.bind(this.postController));
         this.router.get("/AllPosts", authenticateJWT, this.postController.getAllPosts.bind(this.postController));

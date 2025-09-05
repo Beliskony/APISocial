@@ -28,6 +28,9 @@ import { AdminProvider } from "../admin/adminProvider/Admin.Provider";
 import { AdminRouter } from "../admin/adminRoute/AdminRoute";
 import { AdminController } from "../admin/adminController/Admin.Controller";
 import { TYPES } from "./TYPES";
+import { MediaService } from "../services/Media.service";
+import { MediaController } from "../controllers/MediaController";
+import { MediaRouter } from "../routes/media.router";
 
 
 
@@ -39,6 +42,7 @@ container.bind(TYPES.CommentService).to(CommentService).inSingletonScope();
 container.bind(TYPES.StoryService).to(StoryService).inSingletonScope();
 container.bind(TYPES.LikeService).to(LikeService).inSingletonScope();
 container.bind(TYPES.NotificationsService).to(NotificationsService).inSingletonScope();
+container.bind(TYPES.MediaService).to(MediaService).inSingletonScope()
 
 
 // providers
@@ -57,6 +61,7 @@ container.bind(TYPES.PostController).to(PostController).inSingletonScope();
 container.bind(TYPES.LikeController).to(LikeController).inSingletonScope();
 container.bind(TYPES.StoryController).to(StoryController).inSingletonScope();
 container.bind(TYPES.NotificationsController).to(NotificationsController).inSingletonScope();
+container.bind(TYPES.MediaController).to(MediaController).inSingletonScope()
 
 // routes
 container.bind(TYPES.UserRouter).to(UserRouter).inSingletonScope();
@@ -65,6 +70,7 @@ container.bind(TYPES.PostRouter).to(PostRouter).inSingletonScope();
 container.bind(TYPES.LikeRouter).to(LikeRouter).inSingletonScope();
 container.bind(TYPES.StoryRouter).to(StoryRouter).inSingletonScope();
 container.bind(TYPES.NotificationsRouter).to(NotificationsRouter).inSingletonScope();
+container.bind(TYPES.MediaRouter).to(MediaRouter).inSingletonScope()
 
 
 
@@ -74,3 +80,4 @@ container.bind<AdminController>(TYPES.AdminController).to(AdminController).inSin
 container.bind<AdminService>(TYPES.AdminService).to(AdminService).inSingletonScope();
 container.bind<AdminProvider>(TYPES.AdminProvider).to(AdminProvider).inSingletonScope();
 container.bind<AdminRouter>(TYPES.AdminRouter).to(AdminRouter).inSingletonScope;
+

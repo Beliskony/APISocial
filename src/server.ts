@@ -11,6 +11,7 @@ import { AdminRouter } from "./admin/adminRoute/AdminRoute";
 import { container } from "./config/container";
 import { TYPES } from "./config/TYPES";
 import bodyParser from "body-parser";
+import { MediaRouter } from "./routes/media.router";
 
 
 dotenv.config();
@@ -29,6 +30,7 @@ const likeRouter = container.get<LikeRouter>(TYPES.LikeRouter);
 const commentRouter = container.get<CommentRouter>(TYPES.CommentRouter);
 const adminRouter = container.get<AdminRouter>(TYPES.AdminRouter)
 const notificationsRouter = container.get<NotificationsRouter>(TYPES.NotificationsRouter);
+const mediaRouter = container.get<MediaRouter>(TYPES.MediaRouter)
 
 // Routes
 app.use("/api/user", userRouter.router);
@@ -38,6 +40,7 @@ app.use("/api/like", likeRouter.router);
 app.use("/api/comment", commentRouter.router);
 app.use("/api/admin", adminRouter.router);
 app.use("/api/notifications", notificationsRouter.router);
+app.use("/api/media", mediaRouter.router)
 
 
 // Fonction de démarrage

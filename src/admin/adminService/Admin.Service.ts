@@ -2,7 +2,9 @@ import { injectable } from "inversify";
 import UserModel from "../../models/User.model";
 import PostModel from "../../models/Post.model";
 import CommentModel from "../../models/Comment.model";
+import NotificationsModel from "../../models/Notifications.model";
 import AdminModel, { IAdmin } from "../adminModel/Admin.Model";
+import cloudinary from "../../config/cloudinary";
 import { hash, compare } from "bcryptjs";
 import { Document } from "mongoose";
 
@@ -43,27 +45,54 @@ export class AdminService {
 
     //pour supprimer completement un utilisateur standard
     async deleteUserComplet(userId: string): Promise<void> {
+    // Vérifier si l'utilisateur existe
+    const user = await UserModel.findById(userId);
+    if (!user) throw new Error("Utilisateur introuvable");
 
-         // Vérifier si l'utilisateur existe
-        const user = await UserModel.findById(userId);
-        if (!user) throw new Error("Utilisateur introuvable");
+    // Récupérer toutes les publications de cet utilisateur
+    const posts = await PostModel.find({ user: userId });
 
-        // Supprimer tous les commentaires faits par l'utilisateur
-        await CommentModel.deleteMany({ user: userId });
+    for (const post of posts) {
+        // Supprimer médias (exemple pour Cloudinary)
+        if (post.media?.images) {
+            for (const url of post.media.images) {
+                const publicId = this.extractPublicIdFromUrl(url);
+                if (publicId) {
+                    await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+                }
+            }
+        }
+        if (post.media?.videos) {
+            for (const url of post.media.videos) {
+                const publicId = this.extractPublicIdFromUrl(url);
+                if (publicId) {
+                    await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+                }
+            }
+        }
 
-        // Supprimer toutes les publications de l'utilisateur
-        await PostModel.deleteMany({ user: userId });
+        // Supprimer tous les commentaires liés au post
+        await CommentModel.deleteMany({ post: post._id });
 
-        // Retirer les likes de l'utilisateur sur d'autres publications
-        await PostModel.updateMany(
-        { likes: userId },
-        { $pull: { likes: userId } }
-        );
-
-        // Supprimer l'utilisateur
-        await UserModel.findByIdAndDelete(userId);
+        // Supprimer la publication
+        await PostModel.findByIdAndDelete(post._id);
     }
 
+    // Supprimer tous les commentaires faits par l'utilisateur
+    await CommentModel.deleteMany({ user: userId });
+
+    // Retirer les likes de l'utilisateur sur d'autres publications
+    await PostModel.updateMany(
+        { likes: userId },
+        { $pull: { likes: userId } }
+    );
+
+    // Supprimer les notifications liées à cet utilisateur (sender ou recipient)
+    await NotificationsModel.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] });
+
+    // Supprimer l'utilisateur
+    await UserModel.findByIdAndDelete(userId);
+}
 
 
     //Pour supprimer une publication
@@ -82,7 +111,7 @@ export class AdminService {
          // Retirer la référence du post dans le tableau `posts` de l'utilisateur
          await UserModel.findByIdAndUpdate(userId, {
          $pull: { posts: postId }
-        })
+        });
     }
 
     //Pour supprimer un commentaire
@@ -95,6 +124,17 @@ export class AdminService {
             {$pull: {comments: commentId}}
         );
     }
+
+    // Helper pour extraire public_id Cloudinary depuis url
+ extractPublicIdFromUrl(url: string): string | null {
+    try {
+        const parts = url.split('/');
+        const lastPart = parts[parts.length - 1];
+        return lastPart.split('.')[0];
+    } catch {
+        return null;
+    }
+}
 
 
 }

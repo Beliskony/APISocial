@@ -3,6 +3,7 @@ import { UserController } from "../controllers/userController";
 import {  authenticateJWT, loginUser, registerUser, } from "../middlewares/auth";
 import { UserZodSchema, LoginZodSchema, FollowZodSchema, UpdateProfileZodSchema } from "../schemas/User.ZodSchema";
 import { userValidateRequest, updateUserRequest } from "../middlewares/userMiddleware";
+import { formParser } from "../middlewares/form-data";
 import { inject, injectable } from "inversify";
 import { TYPES } from "../config/TYPES";
 
@@ -21,9 +22,9 @@ export class UserRouter {
   private initializeRoutes(): void {
     this.router.get ("/search/:username", this.userController.findUserByUsername.bind(this.userController));
 
-    this.router.post("/register",registerUser(UserZodSchema), this.userController.createUser.bind(this.userController));
+    this.router.post("/register",formParser,registerUser(UserZodSchema), this.userController.createUser.bind(this.userController));
 
-    this.router.post("/login",loginUser(LoginZodSchema), this.userController.loginUser.bind(this.userController));
+    this.router.post("/login",formParser,loginUser(LoginZodSchema), this.userController.loginUser.bind(this.userController));
 
     this.router.post("/follow/:targetId", authenticateJWT, this.userController.toggleFollow.bind(this.userController));
 
