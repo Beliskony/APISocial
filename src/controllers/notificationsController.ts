@@ -1,30 +1,43 @@
 import { Request, Response } from "express";
-import { inject } from "inversify";
+import { inject, injectable } from "inversify";
 import { NotificationsProvider } from "../providers/Notifications.provider";
 import { AuthRequest } from "../middlewares/Auth.Types";
 import { INotification } from "../models/Notifications.model";
 import { TYPES } from "../config/TYPES";
 
-
+@injectable()
 export class NotificationsController {
     constructor(@inject(TYPES.NotificationsProvider) private notificationsProvider: NotificationsProvider) {}
 
+    // Créer une notification
     async createNotification(req: AuthRequest, res: Response): Promise<void> {
-        const userId = req.user?._id;
-        if (!userId) {
+        const senderId = req.user?._id;
+        if (!senderId) {
             res.status(401).json({ message: 'Unauthorized' });
             return;
         }
-        const { type, content } = req.body;
+
+        const { recipientId, type, content, postId } = req.body;
+        if (!recipientId || !type) {
+            res.status(400).json({ message: 'recipientId et type sont requis' });
+            return;
+        }
 
         try {
-            const notification = await this.notificationsProvider.createNotification(userId, type, content);
+            const notification: INotification = await this.notificationsProvider.createNotification(
+                senderId,
+                recipientId,
+                type,
+                content,
+                postId
+            );
             res.status(201).json(notification);
         } catch (error) {
             res.status(500).json({ message: 'Error creating notification', error });
         }
     }
 
+    // Récupérer toutes les notifications de l'utilisateur
     async getNotifications(req: AuthRequest, res: Response): Promise<void> {
         const userId = req.user?._id;
         if (!userId) {
@@ -40,6 +53,7 @@ export class NotificationsController {
         }
     }
 
+    // Marquer comme lu
     async markAsRead(req: Request, res: Response): Promise<void> {
         const { notificationId } = req.params;
 
@@ -55,6 +69,7 @@ export class NotificationsController {
         }
     }
 
+    // Compter les notifications non lues
     async getUnreadCount(req: AuthRequest, res: Response): Promise<void> {
         const userId = req.user?._id;
         if (!userId) {
@@ -67,6 +82,38 @@ export class NotificationsController {
             res.status(200).json({ unreadCount: count });
         } catch (error) {
             res.status(500).json({ message: 'Error fetching unread count', error });
+        }
+    }
+
+    // Supprimer une notification
+    async deleteNotification(req: Request, res: Response): Promise<void> {
+        const { notificationId } = req.params;
+
+        try {
+            const success = await this.notificationsProvider.deleteNotification(notificationId);
+            if (!success) {
+                res.status(404).json({ message: 'Notification not found' });
+                return;
+            }
+            res.status(204).send(); // Sans contenu
+        } catch (error) {
+            res.status(500).json({ message: 'Error deleting notification', error });
+        }
+    }
+
+    // Supprimer toutes les notifications d'un utilisateur
+    async deleteAllUserNotifications(req: AuthRequest, res: Response): Promise<void> {
+        const userId = req.user?._id;
+        if (!userId) {
+            res.status(401).json({ message: 'Unauthorized' });
+            return;
+        }
+
+        try {
+            await this.notificationsProvider.deleteAllUserNotifications(userId);
+            res.status(204).send();
+        } catch (error) {
+            res.status(500).json({ message: 'Error deleting notifications', error });
         }
     }
 }

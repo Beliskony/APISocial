@@ -23,23 +23,33 @@ export class CommentService {
                 $push: {comments: savedComment._id}
             });
 
-            // creation de notification pour la chaque commentaire fait par un utilisateur
-            const post = await PostModel.findById(postId).populate('user', '_id username profilePicture');
-            if (post && post.user._id.toString() !== userId) {
-                const commentUser = await UserModel.findById(userId).select('username profilePicture');
-                if (!commentUser) throw new Error('User not found');
+      // Création de la notification
+    const post = await PostModel.findById(postId).populate('user', '_id username profilePicture');
+    if (post && post.user._id.toString() !== userId) {
+        const commentUser = await UserModel.findById(userId).select('username profilePicture');
+        if (!commentUser) throw new Error('User not found');
 
-                const notification = new NotificationsModel({
-                    recipient: post.user._id,
-                    sender: userId,
-                    type: 'comment',
-                    post: postId,
-                    content: `${commentUser.username} a commenté votre publication.`,
-                    isRead: false,
-                });
-                await notification.save();
-            }
+        // Vérifier qu’il n’y a pas déjà une notif identique en attente
+        const existingNotif = await NotificationsModel.findOne({
+            recipient: post.user._id,
+            sender: userId,
+            post: postId,
+            type: 'comment',
+            isRead: false,
+        });
 
+        if (!existingNotif) {
+            const notification = new NotificationsModel({
+                recipient: post.user._id,
+                sender: userId,
+                type: 'comment',
+                post: postId,
+                content: `${commentUser.username} a commenté votre publication.`,
+                isRead: false,
+            });
+            await notification.save();
+         }
+      }
             return savedComment;
         }
 

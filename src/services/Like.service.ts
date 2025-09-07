@@ -43,16 +43,25 @@ export class LikeService {
                 if (!likeUser) throw new Error('User not found');
 
                 // Create a notification for the post owner
-                if (post.user && post.user._id.toString() !== userId) {
-                    const notification = new NotificationsModel({
+                 if (post.user && post.user._id.toString() !== userId) {
+                    const existingNotif = await NotificationsModel.findOne({
                         recipient: post.user._id,
                         sender: userObjectId,
                         type: 'like',
                         post: postId,
-                        content: `${likeUser.username} a liker votre publication.`,
-                        isRead: false,
                     });
-                    await notification.save();
+
+                    if (!existingNotif) {
+                        const notification = new NotificationsModel({
+                            recipient: post.user._id,
+                            sender: userObjectId,
+                            type: 'like',
+                            post: postId,
+                            content: `${likeUser.username} a liké votre publication.`,
+                            isRead: false,
+                        });
+                        await notification.save();
+                    }
                 }
             }
 

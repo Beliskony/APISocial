@@ -1,21 +1,41 @@
 import mongoose from 'mongoose';
-import { injectable } from 'inversify';
+import { inject, injectable } from 'inversify';
 import UserModel from '../models/User.model';
 import StoryModel,{ IStory } from '../models/Story.model';
+import { MediaService } from './Media.service';
+import { TYPES } from '../config/TYPES';
 
 
 @injectable()
 export class StoryService {
-    async createStory(userId: string, content: { type: 'image' | 'video'; data: string }): Promise<IStory> {
-       const expiresAt= new Date(Date.now() + 24 * 60 *60 * 1000)
-        const story = new StoryModel({ userId: new mongoose.Types.ObjectId(userId), content, expiresAt }); // 24h expiration
+    constructor(
+        @inject(TYPES.MediaService) private mediaService: MediaService
+    ){}
 
-        const savedStory = await story.save();
+    async createStory(userId: string, content: { type: 'image' | 'video'; data: string | Buffer }): Promise<IStory> {
+    let url: string;
 
-        await UserModel.findByIdAndUpdate(userId, {$push: {stories: savedStory._id}})
-       
-        return savedStory;
+    if (Buffer.isBuffer(content.data)) {
+        const result = await this.mediaService.uploadToCloudinary(content.data);
+        url = result.url;
+    } else {
+        url = content.data; // déjà une URL
     }
+
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    const story = new StoryModel({
+        userId: new mongoose.Types.ObjectId(userId),
+        content: { type: content.type, data: url }, // ✅ Ici tu mets l’URL finale
+        expiresAt,
+    });
+
+    const savedStory = await story.save();
+    await UserModel.findByIdAndUpdate(userId, { $push: { stories: savedStory._id } });
+
+    return savedStory;
+}
+
 
     async getUserStories(userId: string): Promise<IStory[]> {
         const now = new Date();
@@ -23,33 +43,50 @@ export class StoryService {
     }
 
     async viewStoryAndGetCount(storyId: string, userId: string): Promise<number> {
-        const story = await StoryModel.findById(storyId);
+    const story = await StoryModel.findById(storyId);
+    if (!story) throw new Error("Story non trouvée");
 
-        if (!story) {
-            throw new Error('Story non trouvee')
-        }
-
-        const hasViewed = story.viewedBy.some((viewerId) =>
-            viewerId.toString() === userId
-        )
-
-        if (!hasViewed) {
-            story.viewedBy.push(new mongoose.Types.ObjectId(userId))
-            await story.save();
-        }
-
-        return story.viewedBy.length;
+    if (!story.viewedBy.includes(new mongoose.Types.ObjectId(userId))) {
+        story.viewedBy.push(new mongoose.Types.ObjectId(userId));
+        await story.save();
     }
+
+    return story.viewedBy.length;
+}
+
     
 
-    async deleteExpiredStories(): Promise<void> {
-        const now = new Date();
-        await StoryModel.deleteMany({ expiresAt: { $lte: now } }).exec();
+async deleteExpiredStories(): Promise<void> {
+    const now = new Date();
+    const expiredStories = await StoryModel.find({ expiresAt: { $lte: now } });
+
+    if (expiredStories.length > 0) {
+        const expiredIds = expiredStories.map(s => s._id);
+
+        // Supprime les stories expirées
+        await StoryModel.deleteMany({ _id: { $in: expiredIds } });
+
+        // Nettoie aussi chez les users
+        await UserModel.updateMany({}, { $pull: { stories: { $in: expiredIds } } });
+    }
+}
+
+
+   async deleteUserStory(storyId: string, userId: string): Promise<void> {
+    // Supprimer uniquement si la story appartient à l'utilisateur
+    const story = await StoryModel.findOneAndDelete({
+        _id: new mongoose.Types.ObjectId(storyId),
+        userId: new mongoose.Types.ObjectId(userId),
+    });
+
+    if (!story) {
+        throw new Error("Story introuvable ou vous n'êtes pas autorisé à la supprimer");
     }
 
-    async deleteUserStory(storyId: string, userId: string): Promise<void> {
-        await StoryModel.deleteOne({ _id: new mongoose.Types.ObjectId(storyId), userId: new mongoose.Types.ObjectId(userId) }).exec();
+    // Retirer la référence du post dans le tableau `stories` de l'utilisateur
+    await UserModel.findByIdAndUpdate(userId, { $pull: { stories: storyId } });
     }
+
 
     async getStoryOfFollowing(userId: string): Promise<IStory[]> {
         const now = new Date();

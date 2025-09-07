@@ -44,75 +44,94 @@ export class AdminService {
 
 
     //pour supprimer completement un utilisateur standard
-    async deleteUserComplet(userId: string): Promise<void> {
-    // Vérifier si l'utilisateur existe
-    const user = await UserModel.findById(userId);
-    if (!user) throw new Error("Utilisateur introuvable");
+async deleteUserComplet(userId: string): Promise<void> {
+  const user = await UserModel.findById(userId);
+  if (!user) throw new Error("Utilisateur introuvable");
 
-    // Récupérer toutes les publications de cet utilisateur
-    const posts = await PostModel.find({ user: userId });
+  // 1️⃣ Récupérer toutes les publications de l'utilisateur
+  const posts = await PostModel.find({ user: userId });
 
-    for (const post of posts) {
-        // Supprimer médias (exemple pour Cloudinary)
-        if (post.media?.images) {
-            for (const url of post.media.images) {
-                const publicId = this.extractPublicIdFromUrl(url);
-                if (publicId) {
-                    await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
-                }
-            }
-        }
-        if (post.media?.videos) {
-            for (const url of post.media.videos) {
-                const publicId = this.extractPublicIdFromUrl(url);
-                if (publicId) {
-                    await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
-                }
-            }
-        }
-
-        // Supprimer tous les commentaires liés au post
-        await CommentModel.deleteMany({ post: post._id });
-
-        // Supprimer la publication
-        await PostModel.findByIdAndDelete(post._id);
+  for (const post of posts) {
+    // Supprimer médias Cloudinary
+    if (post.media?.images) {
+      for (const url of post.media.images) {
+        const publicId = this.extractPublicIdFromUrl(url);
+        if (publicId) await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+      }
+    }
+    if (post.media?.videos) {
+      for (const url of post.media.videos) {
+        const publicId = this.extractPublicIdFromUrl(url);
+        if (publicId) await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+      }
     }
 
-    // Supprimer tous les commentaires faits par l'utilisateur
-    await CommentModel.deleteMany({ user: userId });
+    // Supprimer les commentaires liés
+    await CommentModel.deleteMany({ post: post._id });
 
-    // Retirer les likes de l'utilisateur sur d'autres publications
-    await PostModel.updateMany(
-        { likes: userId },
-        { $pull: { likes: userId } }
-    );
+    // Supprimer les likes liés
+    await PostModel.updateOne({ _id: post._id }, { $set: { likes: [] } });
 
-    // Supprimer les notifications liées à cet utilisateur (sender ou recipient)
-    await NotificationsModel.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] });
+    // Supprimer le post
+    await PostModel.findByIdAndDelete(post._id);
+  }
 
-    // Supprimer l'utilisateur
-    await UserModel.findByIdAndDelete(userId);
+  // 2️⃣ Supprimer les commentaires faits par l'utilisateur ailleurs
+  await CommentModel.deleteMany({ user: userId });
+
+  // 3️⃣ Retirer ses likes sur d'autres posts
+  await PostModel.updateMany({ likes: userId }, { $pull: { likes: userId } });
+
+  // 4️⃣ Supprimer les notifications liées
+  await NotificationsModel.deleteMany({ $or: [{ sender: userId }, { recipient: userId }] });
+
+  // 5️⃣ Supprimer l'utilisateur
+  await UserModel.findByIdAndDelete(userId);
 }
 
 
+
     //Pour supprimer une publication
-    async deletePublication(postId: string): Promise<void>{
-        const post = await PostModel.findById(postId);
-        if (!post) throw new Error ("Publication introuvable");
+//Pour supprimer une publication
+async deletePublication(postId: string): Promise<void> {
+  const post = await PostModel.findById(postId);
+  if (!post) throw new Error("Publication introuvable");
 
-        const userId = post.user.toString();
+  const userId = post.user.toString();
 
-         // Supprimer tous les commentaires liés à cette publication
-         await CommentModel.deleteMany({ post: postId });
-
-         // Supprimer la publication
-         await PostModel.findByIdAndDelete(postId);
-
-         // Retirer la référence du post dans le tableau `posts` de l'utilisateur
-         await UserModel.findByIdAndUpdate(userId, {
-         $pull: { posts: postId }
-        });
+  // 🔹 Supprimer médias Cloudinary liés
+  if (post.media?.images) {
+    for (const url of post.media.images) {
+      const publicId = this.extractPublicIdFromUrl(url);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+      }
     }
+  }
+  if (post.media?.videos) {
+    for (const url of post.media.videos) {
+      const publicId = this.extractPublicIdFromUrl(url);
+      if (publicId) {
+        await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+      }
+    }
+  }
+
+  // 🔹 Supprimer les commentaires liés
+  await CommentModel.deleteMany({ post: postId });
+
+  // 🔹 Supprimer les likes liés
+  await PostModel.updateOne({ _id: postId }, { $set: { likes: [] } });
+
+  // 🔹 Supprimer le post
+  await PostModel.findByIdAndDelete(postId);
+
+  // 🔹 Retirer la référence du post chez l'utilisateur
+  await UserModel.findByIdAndUpdate(userId, {
+    $pull: { posts: postId }
+  });
+}
+
 
     //Pour supprimer un commentaire
     async deleteUnCommentaire(commentId: string): Promise<void>{
@@ -126,15 +145,18 @@ export class AdminService {
     }
 
     // Helper pour extraire public_id Cloudinary depuis url
- extractPublicIdFromUrl(url: string): string | null {
-    try {
-        const parts = url.split('/');
-        const lastPart = parts[parts.length - 1];
-        return lastPart.split('.')[0];
-    } catch {
-        return null;
-    }
+extractPublicIdFromUrl(url: string): string | null {
+  try {
+    const parts = url.split("/");
+    const fileWithExt = parts.pop() || "";
+    const folder = parts.slice(parts.indexOf("upload") + 1).join("/");
+    const publicId = folder ? `${folder}/${fileWithExt.split(".")[0]}` : fileWithExt.split(".")[0];
+    return publicId;
+  } catch {
+    return null;
+  }
 }
+
 
 
 }

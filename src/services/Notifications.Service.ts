@@ -1,37 +1,57 @@
 import { injectable } from "inversify";
 import mongoose from "mongoose";
-import NotificationsModel, {INotification} from "../models/Notifications.model";
+import NotificationsModel, { INotification } from "../models/Notifications.model";
 import UserModel from "../models/User.model";
 
 @injectable()
 export class NotificationsService {
 
-    async createNotification(userId: string, type: string, content: string): Promise<INotification> {
+    // Créer une notification
+    async createNotification(senderId: string, recipientId: string, type: 'like' | 'comment' | 'follow' | 'new_post', content?: string, postId?: string): Promise<INotification> {
         const newNotification = new NotificationsModel({
-            user: userId,
+            sender: new mongoose.Types.ObjectId(senderId),
+            recipient: new mongoose.Types.ObjectId(recipientId),
             type,
             content,
+            post: postId ? new mongoose.Types.ObjectId(postId) : undefined,
+            isRead: false
         });
+
         const savedNotification = await newNotification.save();
-        await savedNotification.populate('user', '_id username profilePicture');
-        
-        // Logique pour mettre à jour le nombre de notifications de l'utilisateur
-        await UserModel.findByIdAndUpdate(userId, { $push: { notifications: savedNotification._id } }, { new: true });
+        await savedNotification.populate('sender', '_id username profilePicture');
+
+        // Optionnel : ajouter la référence à l'utilisateur destinataire
+        await UserModel.findByIdAndUpdate(recipientId, { $push: { notifications: savedNotification._id } });
+
         return savedNotification;
     }
 
+    // Récupérer toutes les notifications d'un utilisateur
     async getNotifications(userId: string): Promise<INotification[]> {
-        return await NotificationsModel.find({ user: userId })
-            .populate('user', '_id username profilePicture')
+        return await NotificationsModel.find({ recipient: userId })
+            .populate('sender', '_id username profilePicture')
+            .populate('post', '_id text media') // si tu veux inclure les infos du post
             .sort({ createdAt: -1 });
     }
 
+    // Marquer une notification comme lue
     async markAsRead(notificationId: string): Promise<INotification | null> {
-        return await NotificationsModel.findByIdAndUpdate(notificationId, { read: true }, { new: true });
+        return await NotificationsModel.findByIdAndUpdate(notificationId, { isRead: true }, { new: true });
     }
 
+    // Compter les notifications non lues
     async getUnreadCount(userId: string): Promise<number> {
-        const count = await NotificationsModel.countDocuments({ user: userId, read: false });
-        return count;
+        return await NotificationsModel.countDocuments({ recipient: userId, isRead: false });
+    }
+
+    // Supprimer une notification
+    async deleteNotification(notificationId: string): Promise<boolean> {
+        const deleted = await NotificationsModel.findByIdAndDelete(notificationId);
+        return !!deleted;
+    }
+
+    // Supprimer toutes les notifications d'un utilisateur
+    async deleteAllUserNotifications(userId: string): Promise<void> {
+        await NotificationsModel.deleteMany({ recipient: userId });
     }
 }

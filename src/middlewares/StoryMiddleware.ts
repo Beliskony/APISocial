@@ -5,19 +5,24 @@ import { ZodSchema } from 'zod';
 const StoryMiddleware = (schema: ZodSchema) => {
     return async (req: AuthRequest, res: Response, next: NextFunction) => {
         try {
-            if (['POST', 'Delete'].includes(req.method.toUpperCase())) {
+            const method = req.method.toUpperCase();
+
+            if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+                // Valide le body
                 await schema.parseAsync(req.body);
-            } else if (req.method === 'GET') {
-                await schema.parseAsync(req.query);
+            } else if (method === 'DELETE' || method === 'GET') {
+                // Valide les params si présents
+                await schema.parseAsync(req.params);
             }
+
             next();
         } catch (error) {
             res.status(400).json({
                 message: 'Validation error',
                 detail: error instanceof Error ? error.message : error,
             });
+        }
     };
-};
 };
 
 export default StoryMiddleware;

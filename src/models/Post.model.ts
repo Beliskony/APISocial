@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { Types } from 'mongoose';
 
 export interface IPost extends Document {
+    _id:Types.ObjectId
     user: mongoose.Types.ObjectId; // Référence à l'utilisateur
     text?: string;
     media?: {

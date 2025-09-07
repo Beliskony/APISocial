@@ -2,10 +2,16 @@ import { injectable } from "inversify";
 import PostModel, { IPost } from "../models/Post.model";
 import UserModel from "../models/User.model";
 import mongoose from "mongoose";
+import {v2 as cloudinary} from "cloudinary"
+import LikeModel from "../models/Like.model";
+import CommentModel from "../models/Comment.model";
+import { NotificationsService } from "./Notifications.Service";
 
 
 @injectable()
 export class PostService {
+
+    constructor(private notificationsService: NotificationsService){}
 
     async createPost(userId: string, text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost> {
         const newPost = new PostModel ({
@@ -18,6 +24,19 @@ export class PostService {
 
         // Logique pour mettre à jour le nombre de posts de l'utilisateur
         await UserModel.findByIdAndUpdate(userId, {$push: { posts: savedPost._id }}, { new: true });
+
+      const user = await UserModel.findById(userId).populate('followers');
+        if (user?.followers?.length) {
+        for (const follower of user.followers) {
+            await this.notificationsService.createNotification(
+                userId,
+                follower._id.toString(),
+                'new_post',
+                `${user.username} a publié un nouveau post`,
+                savedPost._id.toString()
+            );
+        }
+    }
         return savedPost;
         
     }
@@ -114,6 +133,18 @@ export class PostService {
             throw new Error("You are not authorized to modify this post");
         }
 
+        await CommentModel.deleteMany({ post: postId });
+        await LikeModel.deleteMany({post: postId});
+
+        if (post.media) {
+            const allMedia = [...(post.media.images || []), ...(post.media.videos || [])];
+            for (const url of allMedia) {
+            const publicId = this.extractPublicId(url);
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
+        }}}
+
+
         // Supprimer le post
         await PostModel.findByIdAndDelete(postId);
 
@@ -121,4 +152,16 @@ export class PostService {
         await UserModel.findByIdAndUpdate(userId, {$pull: { posts: postId }});
         return true;
     }
+
+    private extractPublicId(url: string): string | null {
+    try {
+      const parts = url.split("/");
+      const filename = parts.pop() || "";
+      const folder = parts.slice(parts.indexOf("upload") + 1).join("/");
+      return folder ? `${folder}/${filename.split(".")[0]}` : filename.split(".")[0];
+    } catch (err) {
+      console.error("Erreur extraction publicId:", err);
+      return null;
+    }
+  }
 }

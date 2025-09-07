@@ -71,7 +71,8 @@ export class StoryController {
         const userId = req.user?._id; // Récupération de l'ID de l'utilisateur authentifié
 
         if (!userId) {
-            return res.status(401).json({ message: "Utilisateur non authentifié" });
+            res.status(401).json({ message: "Utilisateur non authentifié" });
+            return;
         }
 
         await this.storyProvider.deleteUserStory(storyId, userId);
