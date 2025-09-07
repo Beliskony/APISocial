@@ -79,5 +79,5 @@ container.bind(TYPES.MediaRouter).to(MediaRouter).inSingletonScope()
 container.bind<AdminController>(TYPES.AdminController).to(AdminController).inSingletonScope();
 container.bind<AdminService>(TYPES.AdminService).to(AdminService).inSingletonScope();
 container.bind<AdminProvider>(TYPES.AdminProvider).to(AdminProvider).inSingletonScope();
-container.bind<AdminRouter>(TYPES.AdminRouter).to(AdminRouter).inSingletonScope;
+container.bind<AdminRouter>(TYPES.AdminRouter).to(AdminRouter).inSingletonScope();
 

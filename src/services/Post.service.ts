@@ -1,4 +1,4 @@
-import { injectable } from "inversify";
+import { injectable, inject } from "inversify";
 import PostModel, { IPost } from "../models/Post.model";
 import UserModel from "../models/User.model";
 import mongoose from "mongoose";
@@ -6,12 +6,14 @@ import {v2 as cloudinary} from "cloudinary"
 import LikeModel from "../models/Like.model";
 import CommentModel from "../models/Comment.model";
 import { NotificationsService } from "./Notifications.Service";
+import {TYPES} from '../config/TYPES'
 
 
 @injectable()
 export class PostService {
 
-    constructor(private notificationsService: NotificationsService){}
+    constructor( @inject(TYPES.NotificationsService) private notificationsService: NotificationsService) {}
+
 
     async createPost(userId: string, text?: string, media?: { images?: string[]; videos?: string[] }): Promise<IPost> {
         const newPost = new PostModel ({
