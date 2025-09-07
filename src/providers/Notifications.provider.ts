@@ -7,7 +7,7 @@ import { TYPES } from "../config/TYPES";
 export class NotificationsProvider {
     constructor(@inject(TYPES.NotificationsService) private notificationsService: NotificationsService) {}
 
-    async createNotification(senderId: string, recipientId: string, type: 'like' | 'comment' | 'follow' | 'mention', content?: string, postId?: string): Promise<INotification> {
+    async createNotification(senderId: string, recipientId: string, type: 'like' | 'comment' | 'follow' | 'new_post', content?: string, postId?: string): Promise<INotification> {
         return this.notificationsService.createNotification(senderId, recipientId, type, content || '', postId);
     }
 
