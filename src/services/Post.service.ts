@@ -131,7 +131,20 @@ export class PostService {
         if (!post) {
             throw new Error("Post non trouve");
         }
+
+         console.log("📝 Post trouvé:", {
+        postId: post._id.toString(),
+        owner: post.user.toString(),
+    });
+
+    console.log("Comparaison:", {
+  postOwner: post.user.toString(),
+  userFromToken: userId,
+  equals: post.user.toString() === userId
+});
+
         if (post.user.toString() !== userId) {
+             console.error("❌ Unauthorized: userId ne correspond pas au owner du post");
             throw new Error("You are not authorized to modify this post");
         }
 

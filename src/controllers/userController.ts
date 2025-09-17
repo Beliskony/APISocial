@@ -4,6 +4,7 @@ import { UserProvider } from "../providers/User.provider";
 import { TYPES } from "../config/TYPES";
 import jwt from "jsonwebtoken";
 import { AuthRequest } from "../middlewares/Auth.Types";
+import { IUser } from "../models/User.model";
 
 
 type LoginParams = { identifiant: string; password: string; };
@@ -13,7 +14,7 @@ type LoginParams = { identifiant: string; password: string; };
 export class UserController {
     constructor(@inject(TYPES.UserProvider) private userProvider: UserProvider) {}
 
-    private generateToken(user: any): string {
+    private generateToken(user: IUser): string {
         console.log("🧪 Secret utilisé pour le token :", user);
         return jwt.sign(
             { _id: user._id,

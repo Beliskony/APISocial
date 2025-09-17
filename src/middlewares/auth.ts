@@ -23,18 +23,8 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
       res.status(401).json({ message: 'Token invalide' });
       return;
     }
-      // On filtre explicitement pour ne pas mélanger iat/exp
-    const user: AuthUser = {
-      _id: decoded._id as string,
-      username: decoded.username as string,
-      email: decoded.email as string,
-      phoneNumber: decoded.phoneNumber as string,
-      followers: decoded.followers as string[],
-      profilePicture: decoded.profilePicture as string,
-      posts: decoded.posts as string[],
-    };
 
-    req.user = user// Ajouter les informations de l'utilisateur à la requête
+    req.user = decoded as AuthUser // Ajouter les informations de l'utilisateur à la requête
     next();
   } catch (error) {
     res.status(401).json({ message: 'Token invalide ou expire' });
