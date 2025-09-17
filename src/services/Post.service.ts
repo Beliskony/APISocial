@@ -132,9 +132,11 @@ export class PostService {
             throw new Error("Post non trouve");
         }
 
-         console.log("📝 Post trouvé:", {
+        const postOwnerId = post.user instanceof Object ? post.user._id?.toString() : (post.user as any).toString();
+        
+        console.log("📝 Post trouvé:", {
         postId: post._id.toString(),
-        owner: post.user.toString(),
+        owner: post.user._id.toString(),
     });
 
     console.log("Comparaison:", {
