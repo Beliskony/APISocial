@@ -132,21 +132,20 @@ export class PostService {
             throw new Error("Post non trouve");
         }
 
-        console.log("🧪 DEBUG DELETE POST:");
-console.log("➡️ post.user =", post.user);
-console.log("➡️ typeof post.user =", typeof post.user);
-
         const postOwnerId = typeof post.user === 'string'  ? post.user  : (post.user as mongoose.Types.ObjectId).toString();
 
-        console.log("➡️ Calculated postOwnerId =", postOwnerId);
-console.log("➡️ Provided userId =", userId);
-console.log("➡️ postOwnerId === userId ?", postOwnerId === userId);
     
         
         if (postOwnerId !== userId) {
              console.error("❌ Unauthorized: userId ne correspond pas au owner du post");
             throw new Error("You are not authorized to modify this post");
         }
+
+        console.log("➡️ post.user =", post.user);
+console.log("➡️ typeof post.user =", typeof post.user);
+console.log("➡️ Calculated postOwnerId =", postOwnerId);
+console.log("➡️ Provided userId =", userId);
+console.log("➡️ postOwnerId === userId ?", postOwnerId === userId);
 
         await CommentModel.deleteMany({ post: postId });
         await LikeModel.deleteMany({post: postId});
