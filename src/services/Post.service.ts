@@ -132,20 +132,18 @@ export class PostService {
             throw new Error("Post non trouve");
         }
 
-        const postOwnerId = post.user instanceof Object ? post.user._id?.toString() : (post.user as any).toString();
+        console.log("🧪 DEBUG DELETE POST:");
+console.log("➡️ post.user =", post.user);
+console.log("➡️ typeof post.user =", typeof post.user);
+
+        const postOwnerId = typeof post.user === 'string'  ? post.user  : (post.user as mongoose.Types.ObjectId).toString();
+
+        console.log("➡️ Calculated postOwnerId =", postOwnerId);
+console.log("➡️ Provided userId =", userId);
+console.log("➡️ postOwnerId === userId ?", postOwnerId === userId);
+    
         
-        console.log("📝 Post trouvé:", {
-        postId: post._id.toString(),
-        owner: post.user._id.toString(),
-    });
-
-    console.log("Comparaison:", {
-  postOwner: post.user.toString(),
-  userFromToken: userId,
-  equals: post.user.toString() === userId
-});
-
-        if (post.user.toString() !== userId) {
+        if (postOwnerId !== userId) {
              console.error("❌ Unauthorized: userId ne correspond pas au owner du post");
             throw new Error("You are not authorized to modify this post");
         }
