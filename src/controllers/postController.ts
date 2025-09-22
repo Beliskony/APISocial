@@ -169,6 +169,9 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
                 return;
             }
           const { postId } = req.params;
+            console.log("🚨 Requête suppression reçue:", { postId });
+            console.log("🚨 Utilisateur:", user);
+            
 
           const result = await this.postProvider.deletePost(postId, user);
            if (!result) {
@@ -178,7 +181,7 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
           res.status(200).json({ message: 'Post deleted successfully' });
              
         } catch (error) {
-             res.status(500).json({ message: 'Error deleting post', error });
-        }
+           res.status(403).json({ message: 'Error deleting post', error: (error as Error).message });
+          }
     }
 }

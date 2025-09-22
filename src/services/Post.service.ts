@@ -134,18 +134,11 @@ export class PostService {
 
         const postOwnerId = typeof post.user === 'string'  ? post.user  : (post.user as mongoose.Types.ObjectId).toString();
 
-    
         
         if (postOwnerId !== userId) {
              console.error("❌ Unauthorized: userId ne correspond pas au owner du post");
-            throw new Error("You are not authorized to modify this post");
+            throw new Error("You are not authorized to delete this post");            
         }
-
-        console.log("➡️ post.user =", post.user);
-console.log("➡️ typeof post.user =", typeof post.user);
-console.log("➡️ Calculated postOwnerId =", postOwnerId);
-console.log("➡️ Provided userId =", userId);
-console.log("➡️ postOwnerId === userId ?", postOwnerId === userId);
 
         await CommentModel.deleteMany({ post: postId });
         await LikeModel.deleteMany({post: postId});
