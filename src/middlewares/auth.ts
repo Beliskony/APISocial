@@ -25,6 +25,7 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
     }
 
     req.user = decoded as AuthUser // Ajouter les informations de l'utilisateur à la requête
+      console.log("✅ Utilisateur authentifié via JWT :", req.user);
     next();
   } catch (error) {
     res.status(401).json({ message: 'Token invalide ou expire' });

@@ -4,37 +4,34 @@ import { ZodSchema } from "zod";
 import PostModel from "../models/Post.model";
 
 export const DeletePostMiddleware = (schema: ZodSchema) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-        try {
-            // ✅ Combine params dans un objet à valider
-            const dataToValidate = {
-                postId: req.params.postId,
-                user: req.params.user,
-            };
+  return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // ✅ Valider uniquement le postId (pas l'user)
+      const result = schema.safeParse({ postId: req.params.postId });
+      if (!result.success) {
+        res.status(400).json({ message: "Validation failed", errors: result.error.errors });
+        return;
+      }
 
-            const result = schema.safeParse(dataToValidate);
-            if (!result.success) {
-                res.status(400).json({ message: "Validation failed", errors: result.error.errors });
-                return;
-            }
+      const post = await PostModel.findById(result.data.postId);
+      if (!post) {
+        res.status(404).json({ message: "Post not found" });
+        return;
+      }
 
-            const post = await PostModel.findById(result.data.postId);
-            if (!post) {
-                res.status(404).json({ message: "Post not found" });
-                return;
-            }
+      // ✅ Comparaison avec l'utilisateur authentifié (via JWT)
+      if (post.user.toString() !== req.user?._id.toString()) {
+        res.status(403).json({ message: `You are not authorized to delete this post` });
+        return;
+      }
 
-            if (post.user.toString() !== result.data.user) {
-                res.status(403).json({ message: "You are not authorized to delete this post" });
-                return;
-            }
+      // facultatif : attacher le post au body
+      (req as any).post = post;
 
-            req.body.post = post; // facultatif
-
-            next();
-        } catch (error) {
-            res.status(500).json({ message: "Internal server error", error });
-            return;
-        }
-    };
+      next();
+    } catch (error) {
+      console.error("❌ Erreur middleware DeletePost :", error);
+      res.status(500).json({ message: "Internal server error", error });
+    }
+  };
 };
