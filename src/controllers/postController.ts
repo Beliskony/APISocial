@@ -19,11 +19,11 @@ async createPost(req: AuthRequest, res: Response): Promise<void> {
     return;
   }
 
-  const { text } = req.body;
+  const { text, media: mediaFromBody } = req.body;
   const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
   // Préparer un objet media vide
-  const media: { images: string[]; videos: string[] } = { images: [], videos: [] };
+  const media: { images: string[]; videos: string[] } = { images: mediaFromBody?.images || [], videos: mediaFromBody?.videos || [] };
 
   try {
     if (files) {

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import { AuthRequest } from "./Auth.Types";
 import { ZodSchema } from "zod";
 
@@ -7,8 +7,8 @@ export const CreatePostRequest = (schema: ZodSchema) => {
         const result = schema.safeParse(req.body);
        
         if (!result.success) {
-           res.status(500).json({ 
-                message: "Erreur de creation du post", 
+           res.status(400).json({ 
+                
                 errors: result.error.errors 
             });
             return;
