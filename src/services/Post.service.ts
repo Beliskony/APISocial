@@ -113,15 +113,22 @@ export class PostService {
         if (!post) {
             return null;
         }
-        console.log("✅ Post trouvé avec user :", post.user.toString());
 
         if (post?.user.toString() !== userId) {
             console.log("⛔️ Utilisateur non autorisé");
             throw new Error("You are not authorized to modify this post");
         }
+        if (text !== undefined) {
+            post.text = text;
+        }
 
-        post.text = text || post.text;
-        post.media = media || post.media;
+        if (media) {
+            post.media = {
+                images: media.images ?? post.media?.images,
+                videos: media.videos ?? post.media?.videos,
+            };
+        }
+
         post.updatedAt = new Date();
         return await post.save();
     }

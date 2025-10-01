@@ -118,32 +118,36 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
     const { text } = req.body;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
-    // Préparer un objet media vide
-    const media: { images: string[]; videos: string[] } = { images: [], videos: [] };
+    let media: { images?: string[]; videos?: string[] } | undefined = undefined;
 
-    // Gestion des nouveaux fichiers
-    if (files) {
-      if (files.images) {
-        for (const file of files.images) {
-          const result = await this.mediaService.uploadToCloudinary(file.buffer);
-          if (result.type === 'image') {
-            media.images.push(result.url);
-          }
-        }
-      }
+if (files) {
+  const images: string[] = [];
+  const videos: string[] = [];
 
-      if (files.videos) {
-        for (const file of files.videos) {
-          const result = await this.mediaService.uploadToCloudinary(file.buffer);
-          if (result.type === 'video') {
-            media.videos.push(result.url);
-          }
-        }
-      }
+  if (files.images) {
+    for (const file of files.images) {
+      const result = await this.mediaService.uploadToCloudinary(file.buffer);
+      if (result.type === 'image') images.push(result.url);
     }
+  }
 
-    // Appel à la mise à jour du post
-    const post: IPost | null = await this.postProvider.updatePost(postId, user, text, media);
+  if (files.videos) {
+    for (const file of files.videos) {
+      const result = await this.mediaService.uploadToCloudinary(file.buffer);
+      if (result.type === 'video') videos.push(result.url);
+    }
+  }
+
+  // ⚠️ On n'envoie `media` que s'il y a du contenu réel
+  if (images.length || videos.length) {
+    media = {};
+    if (images.length) media.images = images;
+    if (videos.length) media.videos = videos;
+  }
+}
+
+// Envoie à ton provider
+const post: IPost | null = await this.postProvider.updatePost(postId, user, text, media);
 
     if (!post) {
       res.status(404).json({ message: 'Post not found' });
