@@ -5,18 +5,35 @@ import { TYPES } from "../config/TYPES";
 
 @injectable()
 export class NotificationsProvider {
-    constructor(@inject(TYPES.NotificationsService) private notificationsService: NotificationsService) {}
+    constructor(
+        @inject(TYPES.NotificationsService)
+        private notificationsService: NotificationsService
+    ) {}
 
-    async createNotification(senderId: string, recipientId: string, type: 'like' | 'comment' | 'follow' | 'new_post', content?: string, postId?: string): Promise<INotification> {
+    async createNotification(
+        senderId: string,
+        recipientId: string,
+        type: 'like' | 'comment' | 'follow' | 'new_post',
+        content?: string,
+        postId?: string
+    ): Promise<INotification> {
         return this.notificationsService.createNotification(senderId, recipientId, type, content || '', postId);
     }
 
-    async getNotifications(userId: string): Promise<INotification[]> {
+    async getNotifications(userId: string, page = 1, limit = 20): Promise<INotification[]> {
         return this.notificationsService.getNotifications(userId);
+    }
+
+    async getNotificationById(notificationId: string): Promise<INotification | null> {
+        return this.notificationsService.getNotificationById(notificationId);
     }
 
     async markAsRead(notificationId: string): Promise<INotification | null> {
         return this.notificationsService.markAsRead(notificationId);
+    }
+
+    async markAllAsRead(userId: string): Promise<void> {
+        return this.notificationsService.markAllAsRead(userId);
     }
 
     async getUnreadCount(userId: string): Promise<number> {

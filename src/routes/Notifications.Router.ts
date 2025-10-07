@@ -63,5 +63,12 @@ export class NotificationsRouter {
             authenticateJWT,
             this.notificationsController.deleteAllUserNotifications.bind(this.notificationsController)
         );
+
+        this.router.patch(
+            "/markAllAsRead",
+            authenticateJWT,
+            this.notificationsController.markAllAsRead.bind(this.notificationsController)
+        );
+
     }
 }
