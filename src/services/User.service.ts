@@ -128,4 +128,29 @@ async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<IUs
         return user;
     }
 
+    async getSuggestedUsers(userId: string, limit: number = 10): Promise<IUser[]> {
+    const currentUser = await UserModel.findById(userId);
+    if (!currentUser) {
+        throw new Error("Utilisateur non trouvé");
+    }
+
+    // Récupérer les utilisateurs que l'utilisateur courant ne suit pas déjà
+    // et qui ne sont pas l'utilisateur lui-même
+    const suggestedUsers = await UserModel.find({
+        _id: { 
+            $ne: userId, // Exclure l'utilisateur courant
+            $nin: currentUser.followers || [] // Exclure ceux déjà suivis
+        }
+    })
+    .select("-password -phoneNumber -email") // Exclure les infos sensibles
+    .populate('posts', '-user')
+    .limit(limit)
+    .sort({ 
+        followersCount: -1, // Priorité aux plus populaires
+        createdAt: -1 // Ensuite les plus récents
+    });
+
+    return suggestedUsers;
+}
+
 }

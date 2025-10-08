@@ -37,4 +37,8 @@ export class UserProvider {
         return this.userService.getUserById(userId);
     }
 
+    async getSuggestedUsers(userId: string, limit: number = 10): Promise<IUser[]> {
+        return this.userService.getSuggestedUsers(userId, limit);
+    }
+
 }

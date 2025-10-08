@@ -192,6 +192,25 @@ export class UserController {
         }
     }
 
+    async getSuggestions(req: Request, res: Response): Promise<void> {
+        try {
+            const userId = (req as any).user._id;
+            const limit = parseInt(req.query.limit as string) || 10;
+            
+            const suggestions = await this.userProvider.getSuggestedUsers(userId, limit);
+            
+            res.status(200).json({
+                success: true,
+                data: suggestions
+            });
+        } catch (error: any) {
+            res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
+
 }
     
     
