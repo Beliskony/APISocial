@@ -20,7 +20,7 @@ export const DeletePostMiddleware = (schema: ZodSchema) => {
       }
 
       // ✅ Comparaison avec l'utilisateur authentifié (via JWT)
-      if (post.user.toString() !== req.user?._id.toString()) {
+      if (post.author.toString() !== req.user?._id.toString()) {
         res.status(403).json({ message: `You are not authorized to delete this post` });
         return;
       }

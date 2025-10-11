@@ -1,32 +1,71 @@
 import { Router } from "express";
 import { StoryController } from "../controllers/storyController";
-import StoryMiddleware from "../middlewares/StoryMiddleware";
-import { DeleteStoryZodSchema, StoryZodSchema } from "../schemas/Story.ZodSchema";
+import { StoryMiddleware } from "../middlewares/StoryMiddleware";
 import { authenticateJWT } from "../middlewares/auth";
+import { 
+    CreateStoryZodSchema, 
+    DeleteStoryZodSchema, 
+    ViewStoryZodSchema
+} from "../schemas/Story.ZodSchema";
 import { inject, injectable } from "inversify";
+import { formParser } from "../middlewares/form-data";
 import { TYPES } from "../config/TYPES";
 
 @injectable()
 export class StoryRouter {
     public router: Router;
     private storyController: StoryController;
-  
 
-    constructor(
-        @inject(TYPES.StoryController) storyController: StoryController) 
-        
-        {
+    constructor(@inject(TYPES.StoryController) storyController: StoryController) {
         this.router = Router();
         this.storyController = storyController;
         this.initializeRoutes();
     }
 
     private initializeRoutes(): void {
-        this.router.post("/create", authenticateJWT, StoryMiddleware(StoryZodSchema), this.storyController.createStory.bind(this.storyController));
-        this.router.get("/getUser", authenticateJWT, this.storyController.getUserStories.bind(this.storyController));
-        this.router.delete("/delete/:storyId", authenticateJWT, StoryMiddleware(DeleteStoryZodSchema), this.storyController.deleteUserStory.bind(this.storyController));
-        this.router.get("/expire", this.storyController.deleteExpiredStories.bind(this.storyController));
-        this.router.get("/getFollowersStory", authenticateJWT, this.storyController.getStoryOfFollowers.bind(this.storyController));
-        this.router.get("/countViews/:storyId", authenticateJWT, this.storyController.viewStoryAndGetCount.bind(this.storyController))
+        // ✅ Créer une story
+        this.router.post(
+            "/", 
+            authenticateJWT, 
+            formParser, 
+            StoryMiddleware(CreateStoryZodSchema), 
+            this.storyController.createStory.bind(this.storyController)
+        );
+
+        // ✅ Récupérer mes stories
+        this.router.get(
+            "/my-stories", 
+            authenticateJWT, 
+            this.storyController.getUserStories.bind(this.storyController)
+        );
+
+        // ✅ Récupérer les stories des utilisateurs suivis
+        this.router.get(
+            "/following", 
+            authenticateJWT, 
+            this.storyController.getStoryOfFollowers.bind(this.storyController)
+        );
+
+        // ✅ Voir une story et compter les vues
+        this.router.post(
+            "/:storyId/view", 
+            authenticateJWT, 
+            StoryMiddleware(ViewStoryZodSchema), 
+            this.storyController.viewStoryAndGetCount.bind(this.storyController)
+        );
+
+        // ✅ Supprimer une story
+        this.router.delete(
+            "/:storyId", 
+            authenticateJWT, 
+            StoryMiddleware(DeleteStoryZodSchema), 
+            this.storyController.deleteUserStory.bind(this.storyController)
+        );
+
+        // ✅ Nettoyer les stories expirées (Admin/Cron)
+        this.router.delete(
+            "/cleanup/expired", 
+            this.storyController.deleteExpiredStories.bind(this.storyController)
+        );
     }
 }

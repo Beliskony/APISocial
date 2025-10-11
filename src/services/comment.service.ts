@@ -1,100 +1,332 @@
-import { injectable } from "inversify";
-import CommentModel, {IComment} from "../models/Comment.model";
+// src/core/services/comment.service.ts
+import { injectable, inject } from "inversify";
+import { Types } from "mongoose";
+import CommentModel, { IComment } from "../models/Comment.model";
 import PostModel from "../models/Post.model";
-import NotificationsModel from "../models/Notifications.model";
 import UserModel from "../models/User.model";
+import { NotificationsService } from "../services/Notifications.Service";
+import { TYPES } from "../config/TYPES";
+import { MediaService } from "../services/Media.service";
+
+export interface CreateCommentData {
+  author: Types.ObjectId;
+  post: Types.ObjectId;
+  parentComment?: Types.ObjectId;
+  content: {
+    text: string;
+    media?: {
+      images?: string[];
+      videos?: string[];
+    };
+  };
+  metadata?: {
+    mentions?: Types.ObjectId[];
+    hashtags?: string[];
+  };
+}
+
+export interface UpdateCommentData {
+  content: {
+    text: string;
+    media?: {
+      images?: string[];
+      videos?: string[];
+    };
+  };
+  metadata?: {
+    mentions?: Types.ObjectId[];
+    hashtags?: string[];
+  };
+}
 
 @injectable()
 export class CommentService {
- 
+  constructor(
+    @inject(TYPES.NotificationsService) private notificationsService: NotificationsService,
+    @inject(TYPES.MediaService) private mediaService: MediaService
+  ) {}
 
-    // Add a comment to a post
-    async addComment(postId: string, userId: string, content: string): Promise<IComment> {
-        const newComment =  new CommentModel({
-            user: userId,
-            post: postId,
-            content: content, });
-
-            const savedComment = await newComment.save();
-            await savedComment.populate( 'user', '_id username profilePicture' );
-
-           await PostModel.findByIdAndUpdate(postId, {
-                $inc: {commentsCount: 1},
-                $push: {comments: savedComment._id}
-            });
-
-      // Création de la notification
-    const post = await PostModel.findById(postId).populate('user', '_id username profilePicture');
-    if (post && post.user._id.toString() !== userId) {
-        const commentUser = await UserModel.findById(userId).select('username profilePicture');
-        if (!commentUser) throw new Error('User not found');
-
-        // Vérifier qu’il n’y a pas déjà une notif identique en attente
-        const existingNotif = await NotificationsModel.findOne({
-            recipient: post.user._id,
-            sender: userId,
-            post: postId,
-            type: 'comment',
-            isRead: false,
-        });
-
-        if (!existingNotif) {
-            const notification = new NotificationsModel({
-                recipient: post.user._id,
-                sender: userId,
-                type: 'comment',
-                post: postId,
-                content: `${commentUser.username} a commenté votre publication.`,
-                isRead: false,
-            });
-            await notification.save();
-         }
+  // ✅ Ajouter un commentaire - AMÉLIORÉ
+  async addComment(commentData: CreateCommentData): Promise<IComment> {
+    const newComment = new CommentModel({
+      author: commentData.author,
+      post: commentData.post,
+      parentComment: commentData.parentComment,
+      content: {
+        text: commentData.content.text,
+        media: commentData.content.media || { images: [], videos: [] }
+      },
+      metadata: {
+        mentions: commentData.metadata?.mentions || [],
+        hashtags: commentData.metadata?.hashtags || [],
+        isEdited: false
       }
-            return savedComment;
-        }
+    });
 
+    const savedComment = await newComment.save();
+    await savedComment.populate('author', 'username profilePicture');
     
-    async getCommentsByPostId(postId: string): Promise<IComment[]> {
-        const comments= await CommentModel.find({ post: postId }).sort({createdAt: 1})
-        .populate('user', '_id username profilePicture').exec();
-
-        console.log(comments[0]?.user);
-        
-        return comments;
+    if (commentData.parentComment) {
+      await savedComment.populate('parentComment', 'content.text author');
+      // Ajouter cette réponse au commentaire parent
+      await CommentModel.findByIdAndUpdate(
+        commentData.parentComment,
+        { $push: { 'engagement.replies': savedComment._id } }
+      );
     }
 
+    // Mettre à jour le compteur de commentaires du post
+    await PostModel.findByIdAndUpdate(commentData.post, {
+      $inc: { 'engagement.commentsCount': 1 },
+      $push: { 'engagement.comments': savedComment._id }
+    });
 
-    async updateComment(commentId: string, userId: string, content: string): Promise<IComment | null> {
-        const upComment = await CommentModel.findById(commentId)
+    // Notifications
+    await this.notifyPostOwner(savedComment);
+    await this.notifyMentions(savedComment);
+    await this.notifyParentCommentAuthor(savedComment);
 
-            if (!upComment) {
-                throw new Error("Comment not found");
-            }
+    return savedComment;
+  }
 
-            if (upComment.user.toString() !== userId) {
-                throw new Error("Comment not found ou pas autoiser a modifier ce commentaire");
-            }
+  // ✅ Récupérer les commentaires d'un post - AMÉLIORÉ
+  async getCommentsByPostId(postId: string, page: number = 1, limit: number = 20): Promise<{ comments: IComment[], total: number }> {
+    const [comments, total] = await Promise.all([
+      CommentModel.find({ 
+        post: postId,
+        parentComment: null, // Seulement les commentaires principaux
+        'status.isPublished': true,
+        'status.isDeleted': false
+      })
+      .populate('author', 'username profilePicture')
+      .populate('engagement.replies', 'content.text author createdAt')
+      .sort({ 
+        'engagement.likesCount': -1,
+        createdAt: -1 
+      })
+      .skip((page - 1) * limit)
+      .limit(limit),
+      
+      CommentModel.countDocuments({ 
+        post: postId,
+        parentComment: null,
+        'status.isPublished': true,
+        'status.isDeleted': false
+      })
+    ]);
 
-            upComment.content = content;
-            const saved = await upComment.save();
-            
-            await saved.populate('user','_id username profilePicture' );
-            return saved;
-        }
+    return { comments, total };
+  }
 
-    async deleteComment(commentId: string, userId: string): Promise<boolean> {
-        const delComment = await CommentModel.findById(commentId)
-            if (!delComment || delComment.user.toString() !== userId) {
-                throw new Error("Comment not found ou pas autoiser a supprimer ce commentaire");
-            }
+  // ✅ Récupérer les réponses d'un commentaire
+  async getCommentReplies(commentId: string, page: number = 1, limit: number = 20): Promise<{ replies: IComment[], total: number }> {
+    const [replies, total] = await Promise.all([
+      CommentModel.find({ 
+        parentComment: commentId,
+        'status.isPublished': true,
+        'status.isDeleted': false
+      })
+      .populate('author', 'username profilePicture')
+      .sort({ createdAt: 1 })
+      .skip((page - 1) * limit)
+      .limit(limit),
+      
+      CommentModel.countDocuments({ 
+        parentComment: commentId,
+        'status.isPublished': true,
+        'status.isDeleted': false
+      })
+    ]);
 
-            await CommentModel.findByIdAndDelete(commentId);
-            await PostModel.findByIdAndUpdate(delComment.post, {
-                $inc: {commentsCount: -1},
-                $pull: {comments: delComment._id}
-                });
+    return { replies, total };
+  }
 
-            return true
-        }
+  // ✅ Mettre à jour un commentaire - AMÉLIORÉ
+  async updateComment(commentId: string, userId: string, updateData: UpdateCommentData): Promise<IComment> {
+    const comment = await CommentModel.findById(commentId);
     
+    if (!comment) {
+      throw new Error("Commentaire non trouvé");
+    }
+
+    if (comment.author.toString() !== userId) {
+      throw new Error("Non autorisé à modifier ce commentaire");
+    }
+
+    // Mettre à jour les champs
+    comment.content.text = updateData.content.text;
+    
+    if (updateData.content.media) {
+      comment.content.media = updateData.content.media;
+    }
+
+    if (updateData.metadata) {
+      comment.metadata.mentions = updateData.metadata.mentions || comment.metadata.mentions;
+      comment.metadata.hashtags = updateData.metadata.hashtags || comment.metadata.hashtags;
+    }
+
+    comment.metadata.isEdited = true;
+    comment.metadata.lastEditedAt = new Date();
+
+    const savedComment = await comment.save();
+    await savedComment.populate('author', 'username profilePicture');
+
+    return savedComment;
+  }
+
+  // ✅ Supprimer un commentaire - AMÉLIORÉ
+  async deleteComment(commentId: string, userId: string): Promise<boolean> {
+    const comment = await CommentModel.findById(commentId);
+    
+    if (!comment) {
+      throw new Error("Commentaire non trouvé");
+    }
+
+    // Vérifier si l'utilisateur est l'auteur ou l'auteur du post
+    const post = await PostModel.findById(comment.post);
+    const isPostAuthor = post && post.author.toString() === userId;
+    const isCommentAuthor = comment.author.toString() === userId;
+
+    if (!isCommentAuthor && !isPostAuthor) {
+      throw new Error("Non autorisé à supprimer ce commentaire");
+    }
+
+    // Suppression logique
+    comment.status.isDeleted = true;
+    comment.status.deletedAt = new Date();
+    await comment.save();
+
+    // Mettre à jour le compteur du post
+    await PostModel.findByIdAndUpdate(comment.post, {
+      $inc: { 'engagement.commentsCount': -1 },
+      $pull: { 'engagement.comments': comment._id }
+    });
+
+    // Si c'est une réponse, la retirer du commentaire parent
+    if (comment.parentComment) {
+      await CommentModel.findByIdAndUpdate(
+        comment.parentComment,
+        { $pull: { 'engagement.replies': comment._id } }
+      );
+    }
+
+    return true;
+  }
+
+  // 🆕 NOUVELLES FONCTIONNALITÉS
+
+  // 👍 Gestion des likes sur commentaires
+  async toggleLike(commentId: string, userId: string): Promise<{ action: 'liked' | 'unliked', likesCount: number }> {
+    const comment = await CommentModel.findById(commentId);
+    if (!comment) throw new Error("Commentaire non trouvé");
+
+    const hasLiked = comment.engagement.likes.some(like => 
+      like.toString() === userId
+    );
+
+    if (hasLiked) {
+      // Unlike
+      comment.engagement.likes = comment.engagement.likes.filter(
+        like => like.toString() !== userId
+      );
+      await comment.save();
+      
+      return { action: 'unliked', likesCount: comment.engagement.likesCount };
+    } else {
+      // Like
+      comment.engagement.likes.push(new Types.ObjectId(userId));
+      await comment.save();
+
+      // Notification à l'auteur du commentaire
+      if (comment.author.toString() !== userId) {
+        await this.notificationsService.createNotification(
+          userId,
+          comment.author.toString(),
+          'like',
+          `a aimé votre commentaire`,
+          comment.post.toString()
+        );
+      }
+
+      return { action: 'liked', likesCount: comment.engagement.likesCount };
+    }
+  }
+
+  // 🔍 Commentaires populaires d'un post
+  async getPopularComments(postId: string, limit: number = 10): Promise<IComment[]> {
+    return await CommentModel.getPopularComments(new Types.ObjectId(postId), limit);
+  }
+
+  // 📊 Statistiques des commentaires
+  async getCommentStats(postId: string): Promise<{
+    totalComments: number;
+    totalReplies: number;
+    popularComments: IComment[];
+  }> {
+    const [totalComments, totalReplies, popularComments] = await Promise.all([
+      CommentModel.countDocuments({ 
+        post: postId,
+        parentComment: null,
+        'status.isPublished': true,
+        'status.isDeleted': false
+      }),
+      
+      CommentModel.countDocuments({ 
+        post: postId,
+        parentComment: { $ne: null },
+        'status.isPublished': true,
+        'status.isDeleted': false
+      }),
+      
+      this.getPopularComments(postId, 5)
+    ]);
+
+    return { totalComments, totalReplies, popularComments };
+  }
+
+  // 🔧 MÉTHODES PRIVÉES
+
+  private async notifyPostOwner(comment: IComment): Promise<void> {
+    const post = await PostModel.findById(comment.post).populate('author');
+    if (!post || post.author.toString() === comment.author.toString()) return;
+
+    await this.notificationsService.createNotification(
+      comment.author.toString(),
+      post.author.toString(),
+      'comment',
+      `a commenté votre publication`,
+      comment.post.toString()
+    );
+  }
+
+  private async notifyParentCommentAuthor(comment: IComment): Promise<void> {
+    if (!comment.parentComment) return;
+
+    const parentComment = await CommentModel.findById(comment.parentComment).populate('author');
+    if (!parentComment || parentComment.author.toString() === comment.author.toString()) return;
+
+    await this.notificationsService.createNotification(
+      comment.author.toString(),
+      parentComment.author.toString(),
+      'comment',
+      `a répondu à votre commentaire`,
+      comment.post.toString()
+    );
+  }
+
+  private async notifyMentions(comment: IComment): Promise<void> {
+    if (!comment.metadata.mentions.length) return;
+
+    for (const mentionedUserId of comment.metadata.mentions) {
+      if (mentionedUserId.toString() !== comment.author.toString()) {
+        await this.notificationsService.createNotification(
+          comment.author.toString(),
+          mentionedUserId.toString(),
+          'mention',
+          `vous a mentionné dans un commentaire`,
+          comment.post.toString()
+        );
+      }
+    }
+  }
 }

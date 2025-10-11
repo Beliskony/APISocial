@@ -1,11 +1,52 @@
-import { z } from 'zod';
+// src/core/validation/notification.validation.ts
+import { z } from "zod";
 
-export const NotificationSchema = z.object({
-  type: z.enum(['like', 'comment', 'follow', 'mention', 'message']), // adapte selon ton app
-  content: z.string().min(1, 'Le contenu est requis'),
+// Schéma pour la création de notification
+export const CreateNotificationSchema = z.object({
+  body: z.object({
+    recipientId: z.string().min(1, "ID du destinataire requis"),
+    type: z.enum(['like', 'comment', 'follow', 'new_post', 'mention'], {
+      errorMap: () => ({ message: "Type de notification invalide" })
+    }),
+    content: z.string().max(500, "Le contenu ne peut pas dépasser 500 caractères").optional(),
+    postId: z.string().optional()
+  })
 });
 
-// Pour la validation de l'ID dans les routes comme markAsRead
+// Schéma pour les paramètres d'ID de notification
 export const NotificationIdParamSchema = z.object({
-  notificationId: z.string().regex(/^[a-f\d]{24}$/i, 'ID invalide'), // pour un ObjectId MongoDB
+  params: z.object({
+    notificationId: z.string().min(1, "ID de notification requis")
+  })
 });
+
+// Schéma pour les paramètres de type de notification
+export const NotificationTypeParamSchema = z.object({
+  params: z.object({
+    type: z.enum(['like', 'comment', 'follow', 'new_post', 'mention'], {
+      errorMap: () => ({ message: "Type de notification invalide" })
+    })
+  })
+});
+
+// Schéma pour la pagination
+export const PaginationQuerySchema = z.object({
+  query: z.object({
+    page: z.string()
+      .regex(/^\d+$/, "Le numéro de page doit être un nombre")
+      .transform(val => parseInt(val, 10))
+      .refine(val => val >= 1, "Le numéro de page doit être supérieur à 0")
+      .optional()
+      .default("1"),
+    limit: z.string()
+      .regex(/^\d+$/, "La limite doit être un nombre")
+      .transform(val => parseInt(val, 10))
+      .refine(val => val >= 1 && val <= 100, "La limite doit être entre 1 et 100")
+      .optional()
+      .default("20")
+  })
+});
+
+// Types TypeScript générés
+export type CreateNotificationInput = z.infer<typeof CreateNotificationSchema>['body'];
+export type PaginationInput = z.infer<typeof PaginationQuerySchema>['query'];

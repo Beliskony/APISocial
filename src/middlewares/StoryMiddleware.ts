@@ -1,28 +1,45 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from './Auth.Types';
-import { ZodSchema } from 'zod';
+import { ZodSchema, ZodError } from 'zod';
 
-const StoryMiddleware = (schema: ZodSchema) => {
-    return async (req: AuthRequest, res: Response, next: NextFunction) => {
+export const StoryMiddleware = (schema: ZodSchema) => {
+    return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
         try {
-            const method = req.method.toUpperCase();
+            const dataToValidate = {
+                body: req.body,
+                params: req.params,
+                query: req.query
+            };
 
-            if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
-                // Valide le body
-                await schema.parseAsync(req.body);
-            } else if (method === 'DELETE' || method === 'GET') {
-                // Valide les params si présents
-                await schema.parseAsync(req.params);
-            }
+            const result = await schema.parseAsync(dataToValidate);
+
+            // Remplacer les données par la version validée
+            if (result.body) req.body = result.body;
+            if (result.params) req.params = result.params;
+            if (result.query) req.query = result.query;
 
             next();
+            
         } catch (error) {
+            if (error instanceof ZodError) {
+                const errorMessages = error.errors.map(err => ({
+                    field: err.path.join('.'),
+                    message: err.message
+                }));
+                
+                res.status(400).json({
+                    message: 'Validation error',
+                    errors: errorMessages,
+                });
+                return;
+            }
+
+            // Erreur générale
             res.status(400).json({
                 message: 'Validation error',
-                detail: error instanceof Error ? error.message : error,
+                detail: error instanceof Error ? error.message : 'Unknown error',
             });
+            return;
         }
     };
 };
-
-export default StoryMiddleware;
