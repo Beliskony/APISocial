@@ -50,7 +50,8 @@ export class PostRouter {
         
         // Recherche de posts (publique)
         this.router.get(
-            "/search", 
+            "/search",
+            authenticateJWT, 
             validateRequest(SearchPostsSchema),
             this.postController.searchPosts.bind(this.postController)
         );

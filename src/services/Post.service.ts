@@ -107,11 +107,14 @@ export class PostService {
     // Notifications aux mentions
     await this.notifyMentions(savedPost);
 
-    return savedPost;
+    const completePost = await PostModel.findById(savedPost._id)
+    .populate('author', 'username profilePicture');
+
+    return completePost as IPost;
   }
 
   // ✅ Recherche de posts - CORRIGÉ
-  async searchPosts(query: string, currentUserId: string, page: number = 1, limit: number = 20): Promise<{ posts: IPost[], total: number }> {
+  async searchPosts(query: string, currentUserId?: string, page: number = 1, limit: number = 20): Promise<{ posts: IPost[], total: number }> {
     const searchCriteria = {
       $and: [
         {
@@ -310,7 +313,9 @@ export class PostService {
     }
 
     if (updateData.metadata) {
+      
       post.metadata = { ...post.metadata, ...updateData.metadata };
+   
     }
 
     post.status.isEdited = true;
@@ -331,13 +336,19 @@ export class PostService {
       throw new Error("Non autorisé à supprimer ce post");
     }
 
-    // Suppression logique
-    post.status.isDeleted = true;
-    post.status.deletedAt = new Date();
-    await post.save();
+  // ✅ SUPPRESSION PHYSIQUE (remplace la suppression logique)
+    await PostModel.findByIdAndDelete(postId);
+
 
     // Nettoyage des médias Cloudinary
     await this.cleanupPostMedia(post);
+
+     // ✅ Supprimer aussi la référence du post dans l'utilisateur
+    await UserModel.findByIdAndUpdate(
+        userId,
+        { $pull: { 'content.posts': postId } },
+        { new: true }
+    );
 
     return true;
   }

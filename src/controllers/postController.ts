@@ -16,66 +16,73 @@ export class PostController {
 
     // ✅ Création de post avec médias
     async createPost(req: AuthRequest, res: Response): Promise<void> {
-        const userId = req.user?._id;
-        if (!userId) {
-            res.status(401).json({ 
-                success: false,
-                message: 'Non autorisé' 
-            });
-            return;
-        }
+    const userId = req.user?._id;
+    if (!userId) {
+        res.status(401).json({ 
+            success: false,
+            message: 'Non autorisé' 
+        });
+        return;
+    }
 
-        const { text, media: mediaFromBody } = req.body;
-        const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+    // ✅ UTILISER LA NOUVELLE STRUCTURE du schéma Zod
+    const { content, visibility, metadata, type, sharedPost } = req.body;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
-        // Préparer un objet media vide
-        const media: { images: string[]; videos: string[] } = { 
-            images: mediaFromBody?.images || [], 
-            videos: mediaFromBody?.videos || [] 
+    try {
+        // Préparer les médias à partir de la nouvelle structure
+        let media: { images: string[]; videos: string[] } = { 
+            images: content?.media?.images || [], 
+            videos: content?.media?.videos || [] 
         };
 
-        try {
-            if (files) {
-                // Traitement des images uploadées
-                if (files.images) {
-                    for (const file of files.images) {
-                        const result = await this.mediaService.uploadToCloudinary(file.buffer);
-                        if (result.type === 'image') {
-                            media.images.push(result.url);
-                        }
-                    }
-                }
-
-                // Traitement des vidéos uploadées
-                if (files.videos) {
-                    for (const file of files.videos) {
-                        const result = await this.mediaService.uploadToCloudinary(file.buffer);
-                        if (result.type === 'video') {
-                            media.videos.push(result.url);
-                        }
+        // Traitement des fichiers uploadés
+        if (files) {
+            if (files.images) {
+                for (const file of files.images) {
+                    const result = await this.mediaService.uploadToCloudinary(file.buffer);
+                    if (result.type === 'image') {
+                        media.images.push(result.url);
                     }
                 }
             }
 
-            // Créer le post avec texte et média uploadé
-            const post = await this.postProvider.createPost(userId, text, media);
-            
-            res.status(201).json({
-                success: true,
-                message: "Post créé avec succès",
-                data: post
-            });
-
-        } catch (error) {
-            console.error('Erreur création post:', error);
-            res.status(500).json({ 
-                success: false,
-                message: 'Erreur de création du post', 
-                error: error instanceof Error ? error.message : error 
-            });
+            if (files.videos) {
+                for (const file of files.videos) {
+                    const result = await this.mediaService.uploadToCloudinary(file.buffer);
+                    if (result.type === 'video') {
+                        media.videos.push(result.url);
+                    }
+                }
+            }
         }
-    }
 
+        // ✅ APPEL CORRECT avec tous les paramètres
+        const post = await this.postProvider.createPost(
+            userId, 
+            content?.text,  // ✅ text vient maintenant de content.text
+            media,
+            visibility,
+            metadata,
+            type,
+            sharedPost
+        );
+        
+        res.status(201).json({
+            success: true,
+            message: "Post créé avec succès",
+            data: post
+        });
+
+    } catch (error) {
+        console.error('Erreur création post:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Erreur de création du post', 
+            error: error instanceof Error ? error.message : error 
+        });
+    }
+}
     // ✅ Recherche de posts
     async getPosts(req: Request, res: Response): Promise<void> {
         try {
@@ -166,7 +173,7 @@ export class PostController {
             }
 
             const { postId } = req.params;
-            const { text } = req.body;
+            const { content, visibility, metadata } = req.body;
             const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
             let media: { images?: string[]; videos?: string[] } | undefined = undefined;
@@ -197,7 +204,7 @@ export class PostController {
                 }
             }
 
-            const post = await this.postProvider.updatePost(postId, user, text, media);
+            const post = await this.postProvider.updatePost(postId, user, content?.text, media, visibility, metadata);
 
             if (!post) {
                 res.status(404).json({ 

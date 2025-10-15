@@ -31,13 +31,6 @@ export interface IPost extends Document {
   metadata: {
     tags: string[];
     mentions: Types.ObjectId[]; // Utilisateurs mentionnés
-    location?: {
-      name: string;
-      coordinates: {
-        latitude: number;
-        longitude: number;
-      };
-    };
     hashtags: string[];
   };
   analytics: {
@@ -87,52 +80,16 @@ const PostSchema: Schema = new Schema(
         maxlength: 5000 
       },
       media: {
-        images: {
-          type: [{
-            url: { type: String, required: true },
-            thumbnail: String,
-            caption: String,
-            altText: String,
-            width: Number,
-            height: Number
-          }],
-          validate: {
-            validator: function(v: any[]) {
-              return v.length <= 10; // Limite à 10 images
-            },
-            message: 'Maximum 10 images are allowed.'
-          }
-        },
-        videos: {
-          type: [{
-            url: { type: String, required: true },
-            thumbnail: String,
-            duration: Number, // en secondes
-            caption: String,
-            width: Number,
-            height: Number
-          }],
-          validate: {
-            validator: function(v: any[]) {
-              return v.length <= 3; // Limite à 3 vidéos
-            },
-            message: 'Maximum 3 videos are allowed.'
-          }
-        },
-        files: {
-          type: [{
-            url: { type: String, required: true },
-            name: String,
-            type: String, // pdf, doc, etc.
-            size: Number // en bytes
-          }],
-          validate: {
-            validator: function(v: any[]) {
-              return v.length <= 5; // Limite à 5 fichiers
-            },
-            message: 'Maximum 5 files are allowed.'
-          }
-        }
+        images: [{
+          type: String,
+        }],
+        videos: [{
+          type: String,
+        }], 
+        files: [{
+           type: String
+         
+        }]
       }
     },
     engagement: {
@@ -199,13 +156,6 @@ const PostSchema: Schema = new Schema(
         type: Schema.Types.ObjectId,
         ref: 'User'
       }],
-      location: {
-        name: String,
-        coordinates: {
-          latitude: Number,
-          longitude: Number
-        }
-      },
       hashtags: [{
         type: String,
         trim: true,

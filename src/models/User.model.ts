@@ -7,8 +7,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   profile: {
-    firstName?: string;
-    lastName?: string;
+    fullName?: string;
     bio?: string;
     website?: string;
     location?: string;

@@ -15,7 +15,7 @@ export const CommentMiddleware = (schema: ZodSchema) => {
 
     if (!result.success) {
       const zodError = result.error as ZodError;
-       res.status(400).json({
+      res.status(400).json({
         message: 'Validation error',
         errors: zodError.errors.map(error => ({
           field: error.path.join('.'),
@@ -25,11 +25,10 @@ export const CommentMiddleware = (schema: ZodSchema) => {
       return;
     }
 
-    // Remplacer les données par la version validée
-    req.body = result.data.body || req.body;
-    req.params = result.data.params || req.params;
-    req.query = result.data.query || req.query;
-
+    // CORRECTION : Ne pas réassigner les propriétés de req
+    // Les données sont déjà dans req.body, req.params, req.query
+    // La validation Zod sert juste à vérifier, pas à remplacer
+    
     next();
   };
 };

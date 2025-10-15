@@ -174,12 +174,12 @@ export class CommentService {
     return savedComment;
   }
 
-  // ✅ Supprimer un commentaire - AMÉLIORÉ
-  async deleteComment(commentId: string, userId: string): Promise<boolean> {
+  // ✅ Supprimer un commentaire - VERSION CORRIGÉE
+async deleteComment(commentId: string, userId: string): Promise<boolean> {
     const comment = await CommentModel.findById(commentId);
     
     if (!comment) {
-      throw new Error("Commentaire non trouvé");
+        throw new Error("Commentaire non trouvé");
     }
 
     // Vérifier si l'utilisateur est l'auteur ou l'auteur du post
@@ -188,31 +188,31 @@ export class CommentService {
     const isCommentAuthor = comment.author.toString() === userId;
 
     if (!isCommentAuthor && !isPostAuthor) {
-      throw new Error("Non autorisé à supprimer ce commentaire");
+        throw new Error("Non autorisé à supprimer ce commentaire");
     }
 
-    // Suppression logique
-    comment.status.isDeleted = true;
-    comment.status.deletedAt = new Date();
-    await comment.save();
+    // 🆕 SUPPRESSION PHYSIQUE de la base de données
+    await CommentModel.findByIdAndDelete(commentId);
 
     // Mettre à jour le compteur du post
     await PostModel.findByIdAndUpdate(comment.post, {
-      $inc: { 'engagement.commentsCount': -1 },
-      $pull: { 'engagement.comments': comment._id }
+        $inc: { 'engagement.commentsCount': -1 },
+        $pull: { 'engagement.comments': comment._id }
     });
 
     // Si c'est une réponse, la retirer du commentaire parent
     if (comment.parentComment) {
-      await CommentModel.findByIdAndUpdate(
-        comment.parentComment,
-        { $pull: { 'engagement.replies': comment._id } }
-      );
+        await CommentModel.findByIdAndUpdate(
+            comment.parentComment,
+            { $pull: { 'engagement.replies': comment._id } }
+        );
     }
 
-    return true;
-  }
+    // 🆕 Supprimer également les réponses associées si elles existent
+    await CommentModel.deleteMany({ parentComment: commentId });
 
+    return true;
+}
   // 🆕 NOUVELLES FONCTIONNALITÉS
 
   // 👍 Gestion des likes sur commentaires

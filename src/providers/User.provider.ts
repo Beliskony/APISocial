@@ -26,8 +26,7 @@ export interface UpdateProfileData {
   phoneNumber?: string;
   password?: string;
   profile?: {
-    firstName?: string;
-    lastName?: string;
+    fullName?: string;
     bio?: string;
     website?: string;
     location?: string;
@@ -133,9 +132,12 @@ export class UserProvider {
       if (userData.password && userData.password.length < 6) {
         throw new BadRequestError("Le mot de passe doit contenir au moins 6 caractères");
       }
+      console.log("✅ Données reçues pour update:", userData); // LOG
+    console.log("✅ UserID:", userId);
 
       return await this.userService.updateUserProfile(userId, userData);
     } catch (error) {
+      console.log("❌ Erreur détaillée dans updateUserProfile:", error); 
       if (error instanceof BadRequestError) throw error;
       throw new Error("Erreur lors de la mise à jour du profil");
     }

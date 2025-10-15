@@ -3,7 +3,6 @@ import { Request, Response } from "express";
 import { inject, injectable } from "inversify";
 import { UserProvider } from "../providers/User.provider";
 import { TYPES } from "../config/TYPES";
-import jwt from "jsonwebtoken";
 import { generateToken } from "../middlewares/auth";
 import { AuthRequest } from "../middlewares/Auth.Types";
 import { IUser } from "../models/User.model";
@@ -37,8 +36,12 @@ export class UserController {
 
     // 🆕 Créer un nouvel utilisateur
     async createUser(req: Request, res: Response): Promise<void> {
+        
         try {
             console.log("📥 Controller createUser called with body:", req.body);
+            console.log('=== HEADERS ===', req.headers);
+  console.log('=== BODY ===', req.body);
+  console.log('=== METHOD ===', req.method);
             
             const user = req.body;
             const newUser = await this.userProvider.createUser(user);

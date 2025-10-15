@@ -13,15 +13,25 @@ export class PostProvider {
     async createPost(
         userId: string, 
         text?: string, 
-        media?: { images?: string[], videos?: string[] }
+        media?: { images?: string[], videos?: string[] },
+        // ✅ Ajouter tous les paramètres nécessaires
+    visibility?: { privacy: 'public' | 'friends' | 'private' | 'custom'; allowedUsers?: Types.ObjectId[] },
+    metadata?: { tags?: string[]; mentions?: Types.ObjectId[]; hashtags?: string[] },
+    type?: 'text' | 'image' | 'video' | 'poll' | 'event' | 'share',
+    sharedPost?: string
     ): Promise<IPost> {
         const postData: CreatePostData = {
             author: new Types.ObjectId(userId),
             content: {
                 text,
                 media
-            }
+            },
+            visibility: visibility || { privacy: 'public' },
+            metadata: metadata || {},
+            type: type || 'text',
+            sharedPost: sharedPost ? new Types.ObjectId(sharedPost) : undefined
         };
+        console.log("🔍 DEBUG PostProvider - postData:", JSON.stringify(postData, null, 2));
         return this.postService.createPost(postData);
     }
 
@@ -47,13 +57,17 @@ export class PostProvider {
         postId: string, 
         userId: string, 
         text?: string, 
-        media?: { images?: string[], videos?: string[] }
+        media?: { images?: string[], videos?: string[] },
+        visibility?: any,
+        metadata?: any
     ): Promise<IPost> {
         const updateData: UpdatePostData = {
             content: {
                 text,
                 media
-            }
+            },
+            visibility,
+            metadata
         };
         return this.postService.updatePost(postId, userId, updateData);
     }
@@ -91,7 +105,7 @@ export class PostProvider {
     }
 
     // 🔍 Recherche avancée
-    async searchPosts(query: string, currentUserId: string, page: number = 1, limit: number = 20): Promise<{ posts: IPost[], total: number }> {
+    async searchPosts(query: string, currentUserId?: string, page: number = 1, limit: number = 20): Promise<{ posts: IPost[], total: number }> {
         return this.postService.searchPosts(query, currentUserId, page, limit);
     }
 

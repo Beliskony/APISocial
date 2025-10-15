@@ -157,15 +157,9 @@ export const SearchPostsSchema = z.object({
       .min(2, "La requête doit contenir au moins 2 caractères")
       .max(100, "La requête ne peut pas dépasser 100 caractères"),
     page: z.string()
-      .regex(/^\d+$/, "Le numéro de page doit être un nombre")
-      .transform(val => parseInt(val, 10))
-      .refine(val => val >= 1, "Le numéro de page doit être supérieur à 0")
       .optional()
       .default("1"),
     limit: z.string()
-      .regex(/^\d+$/, "La limite doit être un nombre")
-      .transform(val => parseInt(val, 10))
-      .refine(val => val >= 1 && val <= 100, "La limite doit être entre 1 et 100")
       .optional()
       .default("20"),
   })
