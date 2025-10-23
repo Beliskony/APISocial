@@ -164,9 +164,9 @@ export class PostService {
 
     const [posts, total] = await Promise.all([
       PostModel.find(feedCriteria)
-        .populate('author', 'username profilePicture')
+        .populate('author', 'username profile.profilePicture')
         .populate('sharedPost')
-        .populate('metadata.mentions', 'username profilePicture')
+        .populate('metadata.mentions', 'username profile.profilePicture')
         .sort({ 
           'engagement.likesCount': -1, 
           'engagement.commentsCount': -1,
