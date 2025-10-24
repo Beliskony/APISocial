@@ -133,13 +133,60 @@ const CommentSchema = new Schema<IComment>(
   {
     timestamps: true,
     toJSON: {
-      transform: function(doc, ret) {
-        // Calculer automatiquement les compteurs
-        ret.engagement.likesCount = ret.engagement.likes.length;
-        ret.engagement.repliesCount = ret.engagement.replies.length;
-        return ret;
+  transform: function(doc, ret) {
+    try {
+      // ✅ CORRECTION - Vérifications de sécurité AVANT d'accéder aux propriétés
+      
+      // S'assurer que l'engagement existe
+      if (!ret.engagement) {
+        ret.engagement = {
+          likes: [],
+          likesCount: 0,
+          replies: [],
+          repliesCount: 0
+        };
       }
+
+      // S'assurer que les tableaux existent
+      if (!ret.engagement.likes || !Array.isArray(ret.engagement.likes)) {
+        ret.engagement.likes = [];
+      }
+      
+      if (!ret.engagement.replies || !Array.isArray(ret.engagement.replies)) {
+        ret.engagement.replies = [];
+      }
+
+      // ✅ MAINTENANT on peut accéder aux propriétés en sécurité
+      ret.engagement.likesCount = ret.engagement.likes.length;
+      ret.engagement.repliesCount = ret.engagement.replies.length;
+
+      // Ajouter l'ID transformé si nécessaire
+      ret.id = ret._id.toString();
+      delete ret._id;
+      delete ret.__v;
+
+      return ret;
+
+    } catch (error) {
+      console.error('❌ ERROR in comment transform:', error);
+      // Retourner une structure sécurisée en cas d'erreur
+      return {
+        id: ret._id?.toString(),
+        content: ret.content,
+        engagement: {
+          likes: [],
+          likesCount: 0,
+          replies: [],
+          repliesCount: 0
+        },
+        metadata: ret.metadata,
+        status: ret.status,
+        createdAt: ret.createdAt,
+        updatedAt: ret.updatedAt
+      };
     }
+  }
+}
   }
 );
 

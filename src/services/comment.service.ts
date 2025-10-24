@@ -90,11 +90,15 @@ export class CommentService {
   }
 
   // ✅ Récupérer les commentaires d'un post - AMÉLIORÉ
-  async getCommentsByPostId(postId: string, page: number = 1, limit: number = 20): Promise<{ comments: IComment[], total: number }> {
+  // ✅ Récupérer les commentaires d'un post - AVEC DEBUG
+async getCommentsByPostId(postId: string, page: number = 1, limit: number = 20): Promise<{ comments: IComment[], total: number }> {
+  try {
+    console.log('🔍 DEBUG getCommentsByPostId - Début', { postId, page, limit });
+
     const [comments, total] = await Promise.all([
       CommentModel.find({ 
         post: postId,
-        parentComment: null, // Seulement les commentaires principaux
+        parentComment: null,
         'status.isPublished': true,
         'status.isDeleted': false
       })
@@ -115,8 +119,62 @@ export class CommentService {
       })
     ]);
 
+    // 🔍 LOGS CRITIQUES POUR DEBUG
+    console.log('🔍 DEBUG - Nombre de commentaires trouvés:', comments.length);
+    console.log('🔍 DEBUG - Total count:', total);
+
+    // Vérifier chaque commentaire pour l'engagement
+    comments.forEach((comment, index) => {
+      console.log(`🔍 DEBUG - Comment ${index}:`, {
+        _id: comment._id,
+        content: comment.content?.text?.substring(0, 50) + '...',
+        hasEngagement: !!comment.engagement,
+        engagementStructure: comment.engagement ? {
+          hasLikes: !!comment.engagement.likes,
+          likesType: typeof comment.engagement.likes,
+          likesIsArray: Array.isArray(comment.engagement.likes),
+          likesLength: comment.engagement.likes?.length,
+          likesCount: comment.engagement.likesCount,
+          hasReplies: !!comment.engagement.replies,
+          repliesLength: comment.engagement.replies?.length
+        } : 'NO ENGAGEMENT'
+      });
+
+      // 🔍 VÉRIFICATION DE SÉCURITÉ - Corriger les engagements manquants
+      if (!comment.engagement) {
+        console.log(`⚠️  DEBUG - Comment ${comment._id} n'a pas d'engagement!`);
+        comment.engagement = {
+          likes: [],
+          likesCount: 0,
+          replies: [],
+          repliesCount: 0
+        };
+      }
+
+      if (!comment.engagement.likes || !Array.isArray(comment.engagement.likes)) {
+        console.log(`⚠️  DEBUG - Comment ${comment._id} a un engagement.likes invalide:`, comment.engagement.likes);
+        comment.engagement.likes = [];
+      }
+
+      if (!comment.engagement.replies || !Array.isArray(comment.engagement.replies)) {
+        console.log(`⚠️  DEBUG - Comment ${comment._id} a un engagement.replies invalide:`, comment.engagement.replies);
+        comment.engagement.replies = [];
+      }
+    });
+
+    console.log('✅ DEBUG getCommentsByPostId - Succès');
     return { comments, total };
+
+  } catch (error) {
+    console.error('❌ ERROR getCommentsByPostId:', {
+      message: error,
+      postId,
+      page,
+      limit
+    });
+    throw error;
   }
+}
 
   // ✅ Récupérer les réponses d'un commentaire
   async getCommentReplies(commentId: string, page: number = 1, limit: number = 20): Promise<{ replies: IComment[], total: number }> {
