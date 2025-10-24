@@ -152,9 +152,8 @@ export class PostService {
       $and: [
         {
           $or: [
-            { author: { $in: followedUsers } },
-            { 'metadata.mentions': new Types.ObjectId(userId) },
-            { sharedPost: { $ne: null } }
+            { author: { $in: [...(currentUser.social?.following || []), new Types.ObjectId(userId)] } },
+            { 'visibility.privacy': 'public' }
           ]
         },
         { 'status.isPublished': true },
@@ -168,9 +167,9 @@ export class PostService {
         .populate('sharedPost')
         .populate('metadata.mentions', 'username profile.profilePicture')
         .sort({ 
+          createdAt: -1,
           'engagement.likesCount': -1, 
-          'engagement.commentsCount': -1,
-          createdAt: -1 
+          'engagement.commentsCount': -1
         })
         .skip((page - 1) * limit)
         .limit(limit),
@@ -279,7 +278,7 @@ export class PostService {
       'status.isPublished': true,
       'status.isDeleted': false
     })
-    .populate('author', 'username profilePicture')
+    .populate('author', 'username profile.profilePicture')
     .populate('sharedPost')
     .sort({ 
       'engagement.likesCount': -1, 
@@ -322,7 +321,7 @@ export class PostService {
     post.status.lastEditedAt = new Date();
 
     await post.save();
-    await post.populate('author', 'username profilePicture');
+    await post.populate('author', 'username profile.profilePicture');
     
     return post;
   }
@@ -356,7 +355,7 @@ export class PostService {
   // ✅ Récupérer les posts d'un utilisateur
   async getPostByUser(userId: string): Promise<IPost[]> {
     return await PostModel.find({ author: userId })
-      .populate('author', 'username profilePicture')
+      .populate('author', 'username profile.profilePicture')
       .sort({ createdAt: -1 })
       .exec();
   }
@@ -370,7 +369,7 @@ export class PostService {
 
     // 1. Posts des utilisateurs suivis
     const followedPosts = await PostModel.find({ author: { $in: followedUsers } })
-        .populate('author', 'username profilePicture')
+        .populate('author', 'username profile.profilePicture')
         .sort({ createdAt: -1 })
         .limit(Math.floor(limit * 0.6));
 
@@ -381,13 +380,13 @@ export class PostService {
         { $project: { _id: 1 } },
     ]);
     const randomPosts = await PostModel.find({ _id: { $in: randomPostIds.map(p => p._id) } })
-        .populate('author', 'username profilePicture');
+        .populate('author', 'username profile.profilePicture');
 
     // 3. Posts personnels
     const selfPosts = await PostModel.find({ author: userId })
         .sort({ createdAt: -1 })
         .limit(Math.floor(limit * 0.05))
-        .populate('author', 'username profilePicture');
+        .populate('author', 'username profile.profilePicture');
 
     // 4. Fusion sans doublon
     const allPostsMap = new Map<string, IPost>();
