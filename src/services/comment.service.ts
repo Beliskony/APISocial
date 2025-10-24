@@ -64,7 +64,7 @@ export class CommentService {
     });
 
     const savedComment = await newComment.save();
-    await savedComment.populate('author', 'username profilePicture');
+    await savedComment.populate('author', 'username profile.profilePicture');
     
     if (commentData.parentComment) {
       await savedComment.populate('parentComment', 'content.text author');
@@ -102,11 +102,12 @@ async getCommentsByPostId(postId: string, page: number = 1, limit: number = 20):
         'status.isPublished': true,
         'status.isDeleted': false
       })
-      .populate('author', 'username profilePicture')
+      .populate('author', 'username profile.profilePicture')
       .populate('engagement.replies', 'content.text author createdAt')
       .sort({ 
-        'engagement.likesCount': -1,
-        createdAt: -1 
+        createdAt: -1,
+        'engagement.likesCount': -1
+        
       })
       .skip((page - 1) * limit)
       .limit(limit),
@@ -184,7 +185,7 @@ async getCommentsByPostId(postId: string, page: number = 1, limit: number = 20):
         'status.isPublished': true,
         'status.isDeleted': false
       })
-      .populate('author', 'username profilePicture')
+      .populate('author', 'username profile.profilePicture')
       .sort({ createdAt: 1 })
       .skip((page - 1) * limit)
       .limit(limit),
@@ -227,7 +228,7 @@ async getCommentsByPostId(postId: string, page: number = 1, limit: number = 20):
     comment.metadata.lastEditedAt = new Date();
 
     const savedComment = await comment.save();
-    await savedComment.populate('author', 'username profilePicture');
+    await savedComment.populate('author', 'username profile.profilePicture');
 
     return savedComment;
   }

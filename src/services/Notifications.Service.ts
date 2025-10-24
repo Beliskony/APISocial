@@ -126,7 +126,7 @@ export class NotificationsService {
         recipient: userId,
         type 
       })
-        .populate('sender', 'username profilePicture')
+        .populate('sender', 'username profile.profilePicture')
         .populate('post', 'text media')
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
