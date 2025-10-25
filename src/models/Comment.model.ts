@@ -162,7 +162,8 @@ const CommentSchema = new Schema<IComment>(
 
       // Ajouter l'ID transformé si nécessaire
       ret.id = ret._id.toString();
-      delete ret._id;
+
+      // Supprimer seulement __v
       delete ret.__v;
 
       return ret;
