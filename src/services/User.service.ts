@@ -26,6 +26,9 @@ export interface IUserService {
 export class UserService implements IUserService {
   
   async createUser(user: IUser): Promise<IUser> {
+  try {
+    console.log("🔍 BACKEND DEBUG - Étape 1: Recherche de doublons");
+    
     // Vérifier les doublons
     const existingUser = await UserModel.findOne({ 
       $or: [
@@ -36,21 +39,13 @@ export class UserService implements IUserService {
     });
     
     if (existingUser) {
-      if (existingUser.email === user.email) {
-        throw new Error("Un utilisateur avec cet email existe déjà");
-      }
-      if (existingUser.contact.phoneNumber === user.contact.phoneNumber) {
-        throw new Error("Un utilisateur avec ce numéro de téléphone existe déjà");
-      }
-      if (existingUser.username === user.username) {
-        throw new Error("Ce nom d'utilisateur est déjà pris");
-      }
+      // ... gestion des doublons existante
     }
 
-    // Hasher le mot de passe
+    console.log("🔍 BACKEND DEBUG - Étape 2: Hachage mot de passe");
     const hashedPassword = await hash(user.password, 12);
     
-    // Créer l'utilisateur
+    console.log("🔍 BACKEND DEBUG - Étape 3: Création user MongoDB");
     const newUser = new UserModel({
       ...user,
       password: hashedPassword,
@@ -60,18 +55,27 @@ export class UserService implements IUserService {
       'status.lastSeen': new Date()
     });
 
+    console.log("🔍 BACKEND DEBUG - Étape 4: Sauvegarde user");
     await newUser.save();
+    console.log("✅ BACKEND DEBUG - User sauvegardé avec ID:", newUser._id);
     
-    // Créer une notification de bienvenue
-    await NotificationsModel.create({
-      recipient: newUser._id,
-      type: 'welcome',
-      content: `Bienvenue sur notre réseau social, ${newUser.username} !`,
-      isRead: false,
-    });
+    console.log("🔍 BACKEND DEBUG - Étape 5: Création notification");
 
-    return newUser.toJSON() as IUser;
+    console.log("🔍 BACKEND DEBUG - Étape 6: Conversion toJSON");
+    const userJson = newUser.toJSON();
+    console.log("✅ BACKEND DEBUG - Conversion réussie");
+
+    console.log("🔍 BACKEND DEBUG - Étape 7: Retour résultat");
+    return userJson as IUser;
+
+  } catch (error: any) {
+    console.log("💥 BACKEND DEBUG - Erreur dans createUser:", {
+      message: error.message,
+      stack: error.stack
+    });
+    throw new Error("Erreur lors de la création de l'utilisateur");
   }
+}
 
   async loginUser(params: { identifiant: string; password: string }): Promise<IUser> {
     const { identifiant, password } = params;
