@@ -122,7 +122,7 @@ export class UserRouter {
         this.router.post(
             "/follow/:targetId",
             authenticateJWT,
-            validateRequest(FollowZodSchema),
+            //validateRequest(FollowZodSchema),
             this.userController.toggleFollow.bind(this.userController)
         );
 

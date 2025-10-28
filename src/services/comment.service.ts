@@ -48,6 +48,14 @@ export class CommentService {
 
   // ✅ Ajouter un commentaire - AMÉLIORÉ
   async addComment(commentData: CreateCommentData): Promise<IComment> {
+     console.log('🔍 DEBUG addComment - Données reçues:', {
+    author: commentData.author,
+    post: commentData.post,
+    parentComment: commentData.parentComment,
+    parentCommentType: typeof commentData.parentComment,
+    content: commentData.content.text.substring(0, 50) + '...'
+  });
+  
     const newComment = new CommentModel({
       author: commentData.author,
       post: commentData.post,
