@@ -207,34 +207,70 @@ export class UserService implements IUserService {
   }
 
   async updateUserProfile(userId: string, updateData: Partial<IUser>): Promise<IUser> {
-    const allowedFields = [
-      'username', 'profilePicture', 'email', 'phoneNumber', 'password',
-      'profile.bio', 'profile.website', 'profile.location', 'profile.birthDate',
-      'profile.gender', 'profile.coverPicture'
-    ];
+  try {
+    console.log("🔍 DEBUG updateUserProfile - Données reçues:", updateData);
 
     const updateFields: any = {};
 
-    // Filtrer et traiter les champs autorisés
-    for (const field of allowedFields) {
-      if (field in updateData) {
-        if (field === 'password') {
-          updateFields.password = await hash((updateData as any).password, 12);
-        } else if (field === 'username') {
-          // Vérifier l'unicité du username
-          const existingUser = await UserModel.findOne({ 
-            username: (updateData as any).username,
-            _id: { $ne: userId }
-          });
-          if (existingUser) {
-            throw new Error("Ce nom d'utilisateur est déjà pris");
-          }
-          updateFields[field] = (updateData as any)[field];
-        } else {
-          updateFields[field] = (updateData as any)[field];
-        }
+    // Gérer les champs racine
+    if (updateData.username) {
+      const existingUser = await UserModel.findOne({ 
+        username: updateData.username,
+        _id: { $ne: userId }
+      });
+      if (existingUser) {
+        throw new Error("Ce nom d'utilisateur est déjà pris");
+      }
+      updateFields.username = updateData.username;
+    }
+
+    if (updateData.email) {
+      updateFields.email = updateData.email;
+    }
+
+    if (updateData.contact?.phoneNumber) {
+      updateFields.phoneNumber = updateData.contact?.phoneNumber;
+    }
+
+    if (updateData.password) {
+      updateFields.password = await hash(updateData.password, 12);
+    }
+
+    // 🔥 CORRECTION: Gérer les champs du profile correctement
+    if (updateData.profile) {
+      // Initialiser l'objet profile s'il n'existe pas
+      if (!updateFields.profile) {
+        updateFields.profile = {};
+      }
+
+      // Mettre à jour chaque champ du profile individuellement
+      if (updateData.profile.fullName !== undefined) {
+        updateFields.profile.fullName = updateData.profile.fullName;
+      }
+      if (updateData.profile.bio !== undefined) {
+        updateFields.profile.bio = updateData.profile.bio;
+      }
+      if (updateData.profile.website !== undefined) {
+        updateFields.profile.website = updateData.profile.website;
+      }
+      if (updateData.profile.location !== undefined) {
+        updateFields.profile.location = updateData.profile.location;
+      }
+      if (updateData.profile.birthDate !== undefined) {
+        updateFields.profile.birthDate = updateData.profile.birthDate;
+      }
+      if (updateData.profile.gender !== undefined) {
+        updateFields.profile.gender = updateData.profile.gender;
+      }
+      if (updateData.profile.profilePicture !== undefined) {
+        updateFields.profile.profilePicture = updateData.profile.profilePicture;
+      }
+      if (updateData.profile.coverPicture !== undefined) {
+        updateFields.profile.coverPicture = updateData.profile.coverPicture;
       }
     }
+
+    console.log("🔍 DEBUG - Champs à mettre à jour:", updateFields);
 
     const updatedUser = await UserModel.findByIdAndUpdate(
       userId,
@@ -250,31 +286,38 @@ export class UserService implements IUserService {
       throw new Error("Utilisateur non trouvé");
     }
 
+    console.log("✅ DEBUG - Profile après mise à jour:", updatedUser.profile);
+
     return updatedUser.toJSON() as IUser;
+  } catch (error: any) {
+    console.log("❌ Erreur updateUserProfile:", error);
+    throw error;
   }
+}
 
-  async getMe(userId: string): Promise<IUser | null> {
-    const user = await UserModel.findById(userId)
-      .select("-password -security")
-      .populate('content.posts')
-      .populate('content.savedPosts')
-      .populate('social.followers', 'username profilePicture')
-      .populate('social.following', 'username profilePicture')
-      .populate('social.friends', 'username profilePicture');
+async getMe(userId: string): Promise<IUser | null> {
+  const user = await UserModel.findById(userId)
+    .select("-password -security")
+    .populate('content.posts')
+    .populate('content.savedPosts')
+    .populate('social.followers', 'username profilePicture')
+    .populate('social.following', 'username profilePicture')
+    .populate('social.friends', 'username profilePicture')
+    .lean(); // ← Utiliser lean() pour obtenir un objet plain JavaScript
 
-    return user ? user.toJSON() as IUser : null;
-  }
+  return user as IUser;
+}
 
-  async getUserById(userId: string): Promise<IUser | null> {
-    const user = await UserModel.findById(userId)
-      .select("-password -security -contact.phoneNumber -contact.email")
-      .populate('content.posts')
-      .populate('social.followers', 'username profilePicture')
-      .populate('social.following', 'username profilePicture');
+async getUserById(userId: string): Promise<IUser | null> {
+  const user = await UserModel.findById(userId)
+    .select("-password -security -contact.phoneNumber -contact.email")
+    .populate('content.posts')
+    .populate('social.followers', 'username profilePicture')
+    .populate('social.following', 'username profilePicture')
+    .lean(); // ← Utiliser lean()
 
-    return user ? user.toJSON() as IUser : null;
-  }
-
+  return user as IUser;
+}
   async getSuggestedUsers(userId: string, limit: number = 10): Promise<IUser[]> {
     const currentUser = await UserModel.findById(userId);
     if (!currentUser) {

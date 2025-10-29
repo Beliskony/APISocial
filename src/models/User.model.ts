@@ -104,8 +104,7 @@ const UserSchema: Schema = new Schema(
       minlength: 6
     },
     profile: {
-      firstName: { type: String, trim: true, maxlength: 50 },
-      lastName: { type: String, trim: true, maxlength: 50 },
+      fullName: { type: String, trim: true, maxlength: 100 },
       bio: { type: String, maxlength: 500 },
       website: { type: String },
       location: { type: String, maxlength: 100 },
