@@ -100,8 +100,8 @@ export class UserService implements IUserService {
     // Rechercher l'utilisateur
     const user = await UserModel.findOne(searchCriteria)
       .populate('content.posts')
-      .populate('social.followers', 'username profilePicture')
-      .populate('social.following', 'username profilePicture');
+      .populate('social.followers', 'username profile.profilePicture')
+      .populate('social.following', 'username profile.profilePicture');
 
     if (!user) {
       throw new Error("Identifiants incorrects");
@@ -146,7 +146,7 @@ export class UserService implements IUserService {
     })
     .select("-password -security -contact.phoneNumber -contact.email")
     .populate('content.posts')
-    .populate('social.followers', 'username profilePicture')
+    .populate('social.followers', 'username profile.profilePicture')
     .limit(20);
 
     return users.map(user => user.toJSON() as IUser);
@@ -279,8 +279,8 @@ export class UserService implements IUserService {
     )
     .select('-password -security')
     .populate('content.posts')
-    .populate('social.followers', 'username profilePicture')
-    .populate('social.following', 'username profilePicture');
+    .populate('social.followers', 'username profile.profilePicture')
+    .populate('social.following', 'username profile.profilePicture');
 
     if (!updatedUser) {
       throw new Error("Utilisateur non trouvé");
@@ -300,9 +300,9 @@ async getMe(userId: string): Promise<IUser | null> {
     .select("-password -security")
     .populate('content.posts')
     .populate('content.savedPosts')
-    .populate('social.followers', 'username profilePicture')
-    .populate('social.following', 'username profilePicture')
-    .populate('social.friends', 'username profilePicture')
+    .populate('social.followers', 'username profile.profilePicture')
+    .populate('social.following', 'username profile.profilePicture')
+    .populate('social.friends', 'username profile.profilePicture')
     .lean(); // ← Utiliser lean() pour obtenir un objet plain JavaScript
 
   return user as IUser;
@@ -312,8 +312,8 @@ async getUserById(userId: string): Promise<IUser | null> {
   const user = await UserModel.findById(userId)
     .select("-password -security -contact.phoneNumber -contact.email")
     .populate('content.posts')
-    .populate('social.followers', 'username profilePicture')
-    .populate('social.following', 'username profilePicture')
+    .populate('social.followers', 'username profile.profilePicture')
+    .populate('social.following', 'username profile.profilePicture')
     .lean(); // ← Utiliser lean()
 
   return user as IUser;
@@ -374,8 +374,7 @@ async getUserById(userId: string): Promise<IUser | null> {
         {
           $or: [
             { username: { $regex: query, $options: "i" } },
-            { 'profile.firstName': { $regex: query, $options: "i" } },
-            { 'profile.lastName': { $regex: query, $options: "i" } }
+            { 'profile.fullName': { $regex: query, $options: "i" } }
           ]
         },
         { _id: { $ne: new Types.ObjectId(currentUserId) } },
@@ -383,7 +382,7 @@ async getUserById(userId: string): Promise<IUser | null> {
       ]
     })
     .select("-password -security -contact.phoneNumber -contact.email")
-    .populate('social.followers', 'username profilePicture')
+    .populate('social.followers', 'username profile.profilePicture')
     .limit(25);
 
     return users.map(user => user.toJSON() as IUser);
@@ -468,4 +467,5 @@ async getUserById(userId: string): Promise<IUser | null> {
       throw new Error("Utilisateur non trouvé");
     }
   }
+
 }

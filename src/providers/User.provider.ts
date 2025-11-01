@@ -7,6 +7,17 @@ import { BadRequestError, NotFoundError, UnauthorizedError, ConflictError } from
 
 export type LoginParams = { identifiant: string; password: string };
 
+
+export interface FollowersResponse {
+  followers: any[];
+  totalCount: number;
+  hasMore: boolean;
+}
+
+export interface FollowingResponse {
+  following: any[];
+  totalCount: number;
+  hasMore: boolean;}
 export interface CreateUserData {
   username: string;
   email: string;
@@ -307,4 +318,27 @@ export class UserProvider {
       throw new Error("Erreur lors de la récupération des utilisateurs bloqués");
     }
   }
-}
+
+  // 🔍 Vérifier si l'utilisateur est suivi par un autre utilisateur
+  async isFollowedBy(currentUserId: string, targetUserId: string): Promise<boolean> {
+    try {
+      if (!currentUserId || !targetUserId) {
+        throw new BadRequestError("IDs utilisateur requis");
+      }
+
+      const targetUser = await this.userService.getUserById(targetUserId);
+      if (!targetUser) {
+        throw new NotFoundError("Utilisateur cible non trouvé");
+      }
+
+      // Vérifier si currentUserId est dans les followers de targetUser
+      return (targetUser as any).social.followers.some((followerId: string) => 
+        followerId.toString() === currentUserId
+      );
+    } catch (error) {
+      if (error instanceof BadRequestError || error instanceof NotFoundError) throw error;
+      throw new Error("Erreur lors de la vérification des abonnés");
+    }
+  }
+   
+  }
