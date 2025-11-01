@@ -33,4 +33,8 @@ export class StoryProvider {
     async getStoryOfFollowing(userId: string): Promise<IStory[]> {
         return this.storyService.getStoryOfFollowing(userId);
     }
+
+    async hasNewStories(userId: string, lastCheck:Date): Promise<boolean> {
+        return this.storyService.hasNewStories(userId, lastCheck)
+    }
 }

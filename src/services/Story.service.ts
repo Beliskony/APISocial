@@ -164,6 +164,23 @@ export class StoryService {
         return Array.from(storiesByUser.values());
     }
 
+      // 🆕 MÉTHODE : Vérifier s'il y a de nouvelles stories
+    async hasNewStories(userId: string, lastCheck: Date): Promise<boolean> {
+        const user = await UserModel.findById(userId);
+        if (!user) return false;
+
+        const followingIds = user.social.following || [];
+        if (followingIds.length === 0) return false;
+
+        const newStoriesCount = await StoryModel.countDocuments({
+            userId: { $in: followingIds },
+            createdAt: { $gt: lastCheck },
+            expiresAt: { $gt: new Date() }
+        });
+
+        return newStoriesCount > 0;
+    }
+
     // 🆕 NOUVELLE MÉTHODE : Statistiques des stories
     async getStoryStats(userId: string): Promise<{
         totalStories: number;

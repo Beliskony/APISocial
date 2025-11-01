@@ -98,4 +98,67 @@ export class StoryController {
     }
   }
 
+  async hasNewStories(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const userId = req.user?._id;
+        
+        if (!userId) {
+            res.status(401).json({ 
+                success: false, 
+                message: "Utilisateur non authentifié" 
+            });
+            return;
+        }
+
+        // Récupérer le timestamp de dernière vérification depuis les query params
+        const lastCheckParam = req.query.lastCheck;
+        
+        if (!lastCheckParam || typeof lastCheckParam !== 'string') {
+            res.status(400).json({
+                success: false,
+                message: "Le paramètre 'lastCheck' est requis et doit être une date ISO"
+            });
+            return;
+        }
+
+        // Convertir en Date
+        const lastCheck = new Date(lastCheckParam);
+        
+        // Vérifier que la date est valide
+        if (isNaN(lastCheck.getTime())) {
+            res.status(400).json({
+                success: false,
+                message: "Format de date invalide. Utilisez le format ISO (ex: 2024-01-01T00:00:00.000Z)"
+            });
+            return;
+        }
+
+        console.log(`🔍 Vérification nouvelles stories pour ${userId} depuis ${lastCheck.toISOString()}`);
+
+        // Appeler le service
+        const hasNewStories = await this.storyProvider.hasNewStories(userId, lastCheck);
+
+        // Log pour le debug
+        console.log(`📊 Résultat vérification: ${hasNewStories ? 'Nouvelles stories trouvées' : 'Aucune nouvelle story'}`);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                hasNewStories,
+                lastChecked: lastCheck.toISOString(),
+                currentTime: new Date().toISOString()
+            }
+        });
+
+    } catch (error: any) {
+        console.error("❌ Erreur dans hasNewStories:", error);
+        
+        res.status(500).json({ 
+            success: false,
+            message: "Erreur lors de la vérification des nouvelles stories",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+}
+
 }

@@ -67,5 +67,11 @@ export class StoryRouter {
             "/cleanup/expired", 
             this.storyController.deleteExpiredStories.bind(this.storyController)
         );
+
+        this.router.get(
+        "/has-new-stories", 
+        authenticateJWT, 
+        this.storyController.hasNewStories.bind(this.storyController)
+    );
     }
 }
