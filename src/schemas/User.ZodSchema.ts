@@ -154,7 +154,9 @@ export const UpdateProfileZodSchema = z.object({
 
 // Schéma pour les routes avec userId dans les params
 export const UserIdParamsSchema = z.object({
-  userId: z.string().min(1, "ID utilisateur requis"),
+  params: z.object({
+    userId: z.string().min(1, "ID utilisateur requis")
+  })
 });
 
 // Schéma pour les routes avec targetId dans les params
