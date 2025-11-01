@@ -136,8 +136,8 @@ export class PostController {
     // ✅ Posts par utilisateur
     async getPostsByUser(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const user = req.user?._id;
-            if (!user) {
+            const {userId} = req.params;
+            if (!userId) {
                 res.status(401).json({ 
                     success: false,
                     message: 'Non autorisé' 
@@ -145,7 +145,7 @@ export class PostController {
                 return;
             }
 
-            const posts = await this.postProvider.getPostsByUser(user);
+            const posts = await this.postProvider.getPostsByUser(userId);
             
             res.status(200).json({
                 success: true,
