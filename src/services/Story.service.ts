@@ -49,18 +49,48 @@ export class StoryService {
     }
 
     async viewStoryAndGetCount(storyId: string, userId: string): Promise<number> {
-        const story = await StoryModel.findById(storyId);
-        if (!story) throw new Error("Story non trouvée");
+    console.log('🔍 Service - viewStoryAndGetCount appelé');
+    console.log('📝 Paramètres:', { storyId, userId });
+    
+    const story = await StoryModel.findById(storyId);
+    if (!story) throw new Error("Story non trouvée");
 
-        const userIdObj = new Types.ObjectId(userId);
-        
-        if (!story.viewedBy.some(viewerId => viewerId.equals(userIdObj))) {
-            story.viewedBy.push(userIdObj);
-            await story.save();
-        }
+    console.log('📊 Story trouvée:', {
+        storyId: story._id,
+        auteur: story.userId.toString(),
+        currentViews: story.viewedBy.length,
+        currentViewers: story.viewedBy.map(v => v.toString())
+    });
 
-        return story.viewedBy.length;
+    const userIdObj = new Types.ObjectId(userId);
+    const storyAuthorId = story.userId;
+
+    // ✅ CORRECTION 1: L'auteur ne peut pas compter sa propre vue
+    if (storyAuthorId.equals(userIdObj)) {
+        console.log('🚫 Auteur regarde sa propre story - pas de vue comptabilisée');
+        return story.viewedBy.length; // Retourne le compte actuel sans ajouter
     }
+
+    // ✅ CORRECTION 2: Vérifier si l'utilisateur a déjà vu cette story
+    const hasAlreadyViewed = story.viewedBy.some(viewerId => viewerId.equals(userIdObj));
+    
+    if (!hasAlreadyViewed) {
+        console.log('➕ Ajout de l\'utilisateur aux viewers (première vue)');
+        story.viewedBy.push(userIdObj);
+        await story.save();
+        
+        // Recharger pour vérifier
+        const updatedStory = await StoryModel.findById(storyId);
+        console.log('📈 Views après sauvegarde:', updatedStory?.viewedBy.length);
+    } else {
+        console.log('🔁 Utilisateur a déjà vu cette story - pas de nouvelle vue');
+    }
+
+    const finalViewCount = story.viewedBy.length;
+    console.log('🎯 Nombre final de vues:', finalViewCount);
+    
+    return finalViewCount;
+}
 
     async deleteExpiredStories(): Promise<void> {
         const now = new Date();
