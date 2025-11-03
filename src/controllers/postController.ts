@@ -258,6 +258,7 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
             console.log("🚨 Requête suppression reçue:", { postId });
             console.log("🚨 Utilisateur:", user);
 
+          try{
             const result = await this.postProvider.deletePost(postId, user);
             
             if (!result) {
@@ -272,7 +273,30 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
                 success: true,
                 message: 'Post supprimé avec succès'
             });
+        } catch(serviceError) {
+             console.error("❌ Erreur PostService:", serviceError);
             
+            if (serviceError instanceof Error) {
+                if (serviceError.message === "Post non trouvé" || 
+                    serviceError.message === "Non autorisé à supprimer ce post") {
+                    res.status(400).json({ 
+                        success: false,
+                        message: serviceError.message 
+                    });
+                } else {
+                    res.status(500).json({ 
+                        success: false,
+                        message: 'Erreur lors de la suppression du post',
+                        error: serviceError.message 
+                    });
+                }
+            } else {
+                res.status(500).json({ 
+                    success: false,
+                    message: 'Erreur inconnue lors de la suppression du post'
+                });
+            }
+        } 
         } catch (error) {
             res.status(500).json({ 
                 success: false,
