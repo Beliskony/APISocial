@@ -16,7 +16,7 @@ export class StoryService {
         let url: string;
 
         if (Buffer.isBuffer(content.data)) {
-            const result = await this.mediaService.uploadToCloudinary(content.data);
+            const result = await this.mediaService.uploadStory(userId ,content.data);
             url = result.url;
         } else {
             url = content.data; // déjà une URL

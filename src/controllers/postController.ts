@@ -40,7 +40,7 @@ export class PostController {
         if (files) {
             if (files.images) {
                 for (const file of files.images) {
-                    const result = await this.mediaService.uploadToCloudinary(file.buffer);
+                    const result = await this.mediaService.uploadPublication(userId, file.buffer);
                     if (result.type === 'image') {
                         media.images.push(result.url);
                     }
@@ -49,7 +49,7 @@ export class PostController {
 
             if (files.videos) {
                 for (const file of files.videos) {
-                    const result = await this.mediaService.uploadToCloudinary(file.buffer);
+                    const result = await this.mediaService.uploadPublication(userId, file.buffer);
                     if (result.type === 'video') {
                         media.videos.push(result.url);
                     }
@@ -188,7 +188,7 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
         if (files) {
             if (files.images) {
                 for (const file of files.images) {
-                    const result = await this.mediaService.uploadToCloudinary(file.buffer);
+                    const result = await this.mediaService.uploadPublication(user, file.buffer);
                     if (result.type === 'image') {
                         media.images.push(result.url);
                     }
@@ -197,7 +197,7 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
 
             if (files.videos) {
                 for (const file of files.videos) {
-                    const result = await this.mediaService.uploadToCloudinary(file.buffer);
+                    const result = await this.mediaService.uploadPublication(user, file.buffer);
                     if (result.type === 'video') {
                         media.videos.push(result.url);
                     }
