@@ -326,32 +326,40 @@ export class PostService {
     return post;
   }
 
-  // ✅ Suppression de post - CORRIGÉ
-  async deletePost(postId: string, userId: string): Promise<boolean> {
-    const post = await PostModel.findById(postId);
-    if (!post) throw new Error("Post non trouvé");
+ // ✅ Suppression de post - CORRIGÉ (avec gestion d'erreur)
+async deletePost(postId: string, userId: string): Promise<boolean> {
+  const post = await PostModel.findById(postId);
+  if (!post) throw new Error("Post non trouvé");
 
-    if (post.author.toString() !== userId) {
-      throw new Error("Non autorisé à supprimer ce post");
-    }
-
-  // ✅ SUPPRESSION PHYSIQUE (remplace la suppression logique)
-    await PostModel.findByIdAndDelete(postId);
-
-
-    // Nettoyage des médias Cloudinary
-    await this.cleanupPostMedia(post);
-
-     // ✅ Supprimer aussi la référence du post dans l'utilisateur
-    await UserModel.findByIdAndUpdate(
-        userId,
-        { $pull: { 'content.posts': postId } },
-        { new: true }
-    );
-
-    return true;
+  if (post.author.toString() !== userId) {
+    throw new Error("Non autorisé à supprimer ce post");
   }
 
+  // ✅ SUPPRESSION PHYSIQUE
+  await PostModel.findByIdAndDelete(postId);
+
+  // ✅ Nettoyage des médias Cloudinary (sécurisé)
+  try {
+    await this.cleanupPostMedia(post);
+    console.log('✅ Médias Cloudinary supprimés');
+  } catch (mediaError) {
+    console.log('⚠️ Médias non supprimés (post quand même supprimé):', mediaError);
+    // Ne pas throw - la suppression du post est prioritaire
+  }
+
+  // ✅ Supprimer la référence du post dans l'utilisateur
+  try {
+    await UserModel.findByIdAndUpdate(
+      userId,
+      { $pull: { 'content.posts': postId } },
+      { new: true }
+    );
+  } catch (userError) {
+    console.log('⚠️ Référence utilisateur non mise à jour:', userError);
+  }
+
+  return true;
+}
   // ✅ Récupérer les posts d'un utilisateur
   async getPostByUser(userId: string): Promise<IPost[]> {
     return await PostModel.find({ author: userId })
@@ -446,7 +454,10 @@ export class PostService {
       const publicId = this.extractPublicId(url);
       if (publicId) {
         try {
-          await cloudinary.uploader.destroy(publicId, { resource_type: "auto" });
+          const resourceType = url.includes('/image/') || url.includes('.jpg') || url.includes('.png') || url.includes('.jpeg') ? 'image' : 'video';
+          console.log(`🚀 Suppression ${resourceType}:`, publicId);
+
+          await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
         } catch (error) {
           console.error(`Erreur suppression media ${publicId}:`, error);
         }
