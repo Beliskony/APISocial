@@ -111,7 +111,7 @@ const UserSchema: Schema = new Schema(
       birthDate: { type: Date },
       profilePicture: { 
         type: String, 
-        default: 'https://i.pinimg.com/736x/76/47/5e/76475ef2f299694fda13ac1b2dfbda8a.jpg' 
+        default: 'https://img.icons8.com/?size=100&id=1851&format=png&color=000000' 
       },
       coverPicture: { 
         type: String, 
