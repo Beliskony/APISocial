@@ -160,76 +160,87 @@ export class PostController {
         }
     }
 
-    // ✅ Mise à jour de post
-    async updatePost(req: AuthRequest, res: Response): Promise<void> {
-        try {
-            const user = req.user?._id;
-            if (!user) {
-                res.status(401).json({ 
-                    success: false,
-                    message: 'Non autorisé' 
-                });
-                return;
-            }
-
-            const { postId } = req.params;
-            const { content, visibility, metadata } = req.body;
-            const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
-
-            let media: { images?: string[]; videos?: string[] } | undefined = undefined;
-
-            if (files) {
-                const images: string[] = [];
-                const videos: string[] = [];
-
-                if (files.images) {
-                    for (const file of files.images) {
-                        const result = await this.mediaService.uploadToCloudinary(file.buffer);
-                        if (result.type === 'image') images.push(result.url);
-                    }
-                }
-
-                if (files.videos) {
-                    for (const file of files.videos) {
-                        const result = await this.mediaService.uploadToCloudinary(file.buffer);
-                        if (result.type === 'video') videos.push(result.url);
-                    }
-                }
-
-                // ⚠️ On n'envoie `media` que s'il y a du contenu réel
-                if (images.length || videos.length) {
-                    media = {};
-                    if (images.length) media.images = images;
-                    if (videos.length) media.videos = videos;
-                }
-            }
-
-            const post = await this.postProvider.updatePost(postId, user, content?.text, media, visibility, metadata);
-
-            if (!post) {
-                res.status(404).json({ 
-                    success: false,
-                    message: 'Post non trouvé' 
-                });
-                return;
-            }
-
-            res.status(200).json({
-                success: true,
-                message: "Post mis à jour avec succès",
-                data: post
-            });
-
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.error("❌ Erreur updatePost :", error);
-            res.status(500).json({ 
+    // ✅ Mise à jour de post - Version cohérente avec createPost
+async updatePost(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const user = req.user?._id;
+        if (!user) {
+            res.status(401).json({ 
                 success: false,
-                message: 'Erreur lors de la mise à jour du post', 
-                error: message 
+                message: 'Non autorisé' 
             });
+            return;
         }
+
+        const { postId } = req.params;
+        const { content, visibility, metadata } = req.body;
+        const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+        // ✅ MÊME LOGIQUE QUE CREATE_POST
+        let media: { images: string[]; videos: string[] } = { 
+            images: content?.media?.images || [], 
+            videos: content?.media?.videos || [] 
+        };
+
+        console.log('📥 Médias reçus depuis frontend:', media);
+
+        // Traitement des fichiers uploadés (si besoin)
+        if (files) {
+            if (files.images) {
+                for (const file of files.images) {
+                    const result = await this.mediaService.uploadToCloudinary(file.buffer);
+                    if (result.type === 'image') {
+                        media.images.push(result.url);
+                    }
+                }
+            }
+
+            if (files.videos) {
+                for (const file of files.videos) {
+                    const result = await this.mediaService.uploadToCloudinary(file.buffer);
+                    if (result.type === 'video') {
+                        media.videos.push(result.url);
+                    }
+                }
+            }
+        }
+
+        console.log('📦 Médias finaux pour mise à jour:', media);
+
+        // ✅ APPEL COHÉRENT avec createPost
+        const post = await this.postProvider.updatePost(
+            postId, 
+            user, 
+            content?.text, 
+            media, // ✅ Maintenant c'est un objet { images: [], videos: [] }
+            visibility, 
+            metadata
+        );
+
+        if (!post) {
+            res.status(404).json({ 
+                success: false,
+                message: 'Post non trouvé' 
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Post mis à jour avec succès",
+            data: post
+        });
+
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("❌ Erreur updatePost :", error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Erreur lors de la mise à jour du post', 
+            error: message 
+        });
     }
+}
 
     // ✅ Suppression de post
     async deletePost(req: AuthRequest, res: Response): Promise<void> {
