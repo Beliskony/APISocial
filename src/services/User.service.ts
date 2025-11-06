@@ -669,7 +669,7 @@ async getUserById(userId: string): Promise<IUser | null> {
       const formattedNumber = this.formatPhoneNumberForTwilio(phoneNumber);
 
       // 🔥 INTÉGRATION TWILIO - À DÉCOMMENTER ET CONFIGURER
-      /*
+      
       const accountSid = process.env.TWILIO_ACCOUNT_SID;
       const authToken = process.env.TWILIO_AUTH_TOKEN;
       const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
@@ -687,7 +687,6 @@ async getUserById(userId: string): Promise<IUser | null> {
       });
 
       console.log('✅ SMS envoyé via Twilio. SID:', result.sid);
-      */
 
       // 🔥 POUR TEST - À SUPPRIMER EN PRODUCTION
       console.log(`📱 [TEST] SMS serait envoyé à ${formattedNumber}: ${message}`);
