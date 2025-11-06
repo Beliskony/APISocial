@@ -10,6 +10,7 @@ export const TYPES = {
     LikeService: Symbol.for("LikeService"),
     NotificationsService: Symbol.for("NotificationsService"),
     MediaService: Symbol.for('MediaService'),
+  
     
     // Providers
     UserProvider: Symbol.for("UserProvider"),

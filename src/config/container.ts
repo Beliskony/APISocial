@@ -37,7 +37,8 @@ container.bind(TYPES.UserService).to(UserService).inSingletonScope();
 container.bind(TYPES.CommentService).to(CommentService).inSingletonScope();
 container.bind(TYPES.StoryService).to(StoryService).inSingletonScope();
 container.bind(TYPES.NotificationsService).to(NotificationsService).inSingletonScope();
-container.bind(TYPES.MediaService).to(MediaService).inSingletonScope()
+container.bind(TYPES.MediaService).to(MediaService).inSingletonScope();
+
 
 
 // providers

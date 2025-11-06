@@ -128,8 +128,8 @@ const UserSchema: Schema = new Schema(
         unique: true, 
         sparse: true 
       },
-      emailVerified: { type: Boolean, default: false },
-      phoneVerified: { type: Boolean, default: false }
+      emailVerified: { type: Boolean, default: true },
+      phoneVerified: { type: Boolean, default: true }
     },
     social: {
       followers: [{ type: Schema.Types.ObjectId, ref: 'User' }],

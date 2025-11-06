@@ -515,4 +515,77 @@ export class UserController {
             });
         }
     }
+
+
+    // NOUVELLES MÉTHODES PASSWORD RESET
+initiatePasswordReset = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { phoneNumber, usernameOrFullName } = req.body;
+
+    await this.userProvider.initiatePasswordReset({
+      phoneNumber,
+      usernameOrFullName
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Code de réinitialisation envoyé par SMS"
+    });
+
+  } catch (error: any) {
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+verifyResetCode = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { phoneNumber, code } = req.body;
+
+    const isValid = await this.userProvider.verifyResetCode({
+      phoneNumber,
+      code
+    });
+
+    res.status(200).json({
+      success: true,
+      valid: isValid,
+      message: "Code vérifié avec succès"
+    });
+
+  } catch (error: any) {
+    
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { phoneNumber, code, newPassword } = req.body;
+
+    await this.userProvider.resetPassword({
+      phoneNumber,
+      code,
+      newPassword
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Mot de passe réinitialisé avec succès"
+    });
+
+  } catch (error: any) {
+    
+    res.status(400).json({
+      success: false,
+      message: error.message
+    });
+  }
+}
+
 }

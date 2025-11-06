@@ -25,7 +25,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.14.1",
     "multer": "^2.0.2",
-    "twilio": "^5.6.0",
+    "twilio": "^5.10.4",
     "uuid": "^11.1.0",
     "zod": "^3.24.3",
     "zod-to-ts": "^1.2.0"

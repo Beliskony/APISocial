@@ -90,6 +90,21 @@ export class UserRouter {
             this.userController.updateUserProfile.bind(this.userController)
         );
 
+        //Reset mot de passe initiale
+        this.router.post(
+            "/password-reset/initiale", this.userController.initiatePasswordReset.bind(this.userController)
+        );
+
+        //Verifier code de validation
+        this.router.post(
+            "/password-reset/verify", this.userController.verifyResetCode.bind(this.userController)
+        );
+
+        //Modifier mot de passe
+        this.router.post(
+            "/password-reset/reset", this.userController.resetPassword.bind(this.userController)
+        );
+
         // 🛑 Désactiver mon compte
         this.router.post(
             "/me/deactivate",
