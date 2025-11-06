@@ -504,7 +504,16 @@ async getUserById(userId: string): Promise<IUser | null> {
 
       // Rechercher l'utilisateur
       const user = await UserModel.findOne({
-        'contact.phoneNumber': normalizedPhone,
+         $or: [
+        // Format international complet
+        { 'contact.phoneNumber': normalizedPhone },
+        // Format sans + (juste 225...)
+        { 'contact.phoneNumber': normalizedPhone.replace('+', '') },
+        // Format local (sans indicatif)
+        { 'contact.phoneNumber': this.removeCountryCode(normalizedPhone) },
+        // Format avec 0 au début
+        { 'contact.phoneNumber': this.formatWithZero(normalizedPhone) }
+      ],
         'status.isActive': true
       });
 
@@ -653,10 +662,47 @@ async getUserById(userId: string): Promise<IUser | null> {
   /**
    * Méthode utilitaire: Normaliser le numéro de téléphone
    */
-  private normalizePhoneNumber(phoneNumber: string): string {
+   private normalizePhoneNumber(phoneNumber: string): string {
     // Supprimer tous les caractères non numériques sauf le +
-    return phoneNumber.replace(/[^\d+]/g, '');
+    let cleaned = phoneNumber.replace(/[^\d+]/g, '');
+    
+    // Standardiser le format
+    if (cleaned.startsWith('0')) {
+      // Format local → format international
+      cleaned = '+225' + cleaned.substring(1);
+    } else if (cleaned.startsWith('225') && !cleaned.startsWith('+')) {
+      // Format 225... → format +225...
+      cleaned = '+' + cleaned;
+    }
+    
+    return cleaned;
   }
+
+  private formatWithZero(phoneNumber: string): string {
+    let cleaned = this.removeCountryCode(phoneNumber);
+    
+    // Ajouter 0 au début si absent
+    if (!cleaned.startsWith('0')) {
+      cleaned = '0' + cleaned;
+    }
+    
+    return cleaned;
+  }
+
+  private removeCountryCode(phoneNumber: string): string {
+    let cleaned = phoneNumber.replace(/[^\d+]/g, '');
+    
+    // Supprimer +225 ou 225
+    if (cleaned.startsWith('+225')) {
+      return cleaned.substring(4); // Garder seulement la partie après +225
+    } else if (cleaned.startsWith('225')) {
+      return cleaned.substring(3); // Garder seulement la partie après 225
+    }
+    
+    return cleaned;
+  }
+
+ 
 
   /**
    * Méthode utilitaire: Envoyer un SMS via Twilio
