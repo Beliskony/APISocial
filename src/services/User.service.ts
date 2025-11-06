@@ -497,25 +497,38 @@ async getUserById(userId: string): Promise<IUser | null> {
 
    async initiatePasswordReset(phoneNumber: string, usernameOrFullName: string): Promise<void> {
     try {
-      console.log("🔍 INITIATE PASSWORD RESET - Recherche utilisateur:", { phoneNumber, usernameOrFullName });
+      console.log("🎯 SERVICE - initiatePasswordReset début");
+    console.log("📞 Phone reçu:", phoneNumber);
+    console.log("👤 Username reçu:", usernameOrFullName);
 
       // Normaliser le numéro de téléphone
       const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
+      console.log("🔧 Phone normalisé:", normalizedPhone);
+
+      // Rechercher l'utilisateur avec TOUS les formats
+    const searchQueries = [
+      phoneNumber, // Format original "0500123456"
+      normalizedPhone, // "+2250500123456"
+      normalizedPhone.replace('+', ''), // "2250500123456"
+      this.removeCountryCode(normalizedPhone), // "0500123456"
+      this.formatWithZero(normalizedPhone) // "0500123456"
+    ].filter((value, index, self) => self.indexOf(value) === index);
+
+    console.log("🔍 Recherche avec formats:", searchQueries);
 
       // Rechercher l'utilisateur
       const user = await UserModel.findOne({
-         $or: [
-        // Format international complet
-        { 'contact.phoneNumber': normalizedPhone },
-        // Format sans + (juste 225...)
-        { 'contact.phoneNumber': normalizedPhone.replace('+', '') },
-        // Format local (sans indicatif)
-        { 'contact.phoneNumber': this.removeCountryCode(normalizedPhone) },
-        // Format avec 0 au début
-        { 'contact.phoneNumber': this.formatWithZero(normalizedPhone) }
-      ],
-        'status.isActive': true
-      });
+      $or: searchQueries.map(format => ({ 'contact.phoneNumber': format })),
+      'status.isActive': true
+    });
+
+    console.log("👤 Utilisateur trouvé:", user ? {
+      id: user._id,
+      username: user.username,
+      phone: user.contact.phoneNumber,
+      phoneVerified: user.contact.phoneVerified,
+      isActive: user.status.isActive
+    } : 'AUCUN UTILISATEUR TROUVÉ');
 
       if (!user) {
         throw new Error("Aucun compte actif trouvé avec ce numéro de téléphone");
@@ -543,6 +556,12 @@ async getUserById(userId: string): Promise<IUser | null> {
         attempts: 0
       });
 
+      console.log('🎯 ====================================');
+    console.log(`🎯 CODE GÉNÉRÉ: ${resetCode}`);
+    console.log(`🎯 Pour: ${phoneNumber} (DB: ${user.contact.phoneNumber})`);
+    console.log(`🎯 Utilisateur: ${user.username}`);
+    console.log('🎯 ====================================');
+
       // Envoyer le SMS via Twilio
       const message = `Votre code de réinitialisation MyApp est: ${resetCode}. Ce code expire dans 10 minutes.`;
       await this.sendSMS(normalizedPhone, message);
@@ -555,9 +574,7 @@ async getUserById(userId: string): Promise<IUser | null> {
     }
   }
 
-  /**
-   * NOUVELLE MÉTHODE: Vérifier le code de réinitialisation
-   */
+  //NOUVELLE MÉTHODE: Vérifier le code de réinitialisation
   async verifyResetCode(phoneNumber: string, code: string): Promise<boolean> {
     try {
       const normalizedPhone = this.normalizePhoneNumber(phoneNumber);
@@ -601,9 +618,7 @@ async getUserById(userId: string): Promise<IUser | null> {
     }
   }
 
-  /**
-   * NOUVELLE MÉTHODE: Réinitialiser le mot de passe après vérification du code
-   */
+  //NOUVELLE MÉTHODE: Réinitialiser le mot de passe après vérification du code
   async resetPassword(phoneNumber: string, code: string, newPassword: string): Promise<void> {
     try {
       console.log("🔍 RESET PASSWORD - Début processus");
@@ -650,18 +665,14 @@ async getUserById(userId: string): Promise<IUser | null> {
     }
   }
 
-  /**
-   * Méthode utilitaire: Générer un code numérique aléatoire
-   */
+  //Méthode utilitaire: Générer un code numérique aléatoire
   private generateRandomCode(length: number = 4): string {
     const min = Math.pow(10, length - 1);
     const max = Math.pow(10, length) - 1;
     return Math.floor(min + Math.random() * (max - min + 1)).toString().padStart(length, '0');
   }
 
-  /**
-   * Méthode utilitaire: Normaliser le numéro de téléphone
-   */
+  //Méthode utilitaire: Normaliser le numéro de téléphone
    private normalizePhoneNumber(phoneNumber: string): string {
     // Supprimer tous les caractères non numériques sauf le +
     let cleaned = phoneNumber.replace(/[^\d+]/g, '');
@@ -704,66 +715,112 @@ async getUserById(userId: string): Promise<IUser | null> {
 
  
 
-  /**
-   * Méthode utilitaire: Envoyer un SMS via Twilio
-   */
-  private async sendSMS(phoneNumber: string, message: string): Promise<void> {
-    try {
-      console.log(`📱 ENVOI SMS à: ${phoneNumber}`);
-      
-      // Formater le numéro pour Twilio
-      const formattedNumber = this.formatPhoneNumberForTwilio(phoneNumber);
-
-      // 🔥 INTÉGRATION TWILIO - À DÉCOMMENTER ET CONFIGURER
-      
-      const accountSid = process.env.TWILIO_ACCOUNT_SID;
-      const authToken = process.env.TWILIO_AUTH_TOKEN;
-      const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
-
-      if (!accountSid || !authToken || !twilioPhoneNumber) {
-        throw new Error("Configuration Twilio manquante");
-      }
-
-      const client = require('twilio')(accountSid, authToken);
-
-      const result = await client.messages.create({
-        body: message,
-        from: twilioPhoneNumber,
-        to: formattedNumber
-      });
-
-      console.log('✅ SMS envoyé via Twilio. SID:', result.sid);
-
-      // 🔥 POUR TEST - À SUPPRIMER EN PRODUCTION
-      console.log(`📱 [TEST] SMS serait envoyé à ${formattedNumber}: ${message}`);
-      
-    } catch (error: any) {
-      console.error('❌ Erreur envoi SMS:', error);
-      throw new Error(`Échec envoi SMS: ${error.message}`);
-    }
-  }
-
-  /**
-   * Méthode utilitaire: Formater le numéro pour Twilio
-   */
-  private formatPhoneNumberForTwilio(phoneNumber: string): string {
-    let cleaned = phoneNumber.replace(/[^\d+]/g, '');
+  // Méthode utilitaire: Envoyer un SMS via InfoBip
+private async sendSMS(phoneNumber: string, message: string): Promise<void> {
+  try {
+    console.log(`📱 [INFOBIP] Envoi SMS à: ${phoneNumber}`);
+    console.log(`📱 [INFOBIP] Message: ${message}`);
     
-    // Si le numéro commence par 0, le convertir en format international (France)
-    if (cleaned.startsWith('0')) {
-      cleaned = '+33' + cleaned.substring(1);
+    // Extraire le code pour l'affichage
+    const codeMatch = message.match(/(\d{6})/);
+    const resetCode = codeMatch ? codeMatch[1] : '123456';
+
+    // Configuration InfoBip
+    const baseUrl = process.env.INFOBIP_BASE_URL || "https://kqmg68.api.infobip.com";
+    const apiKey = process.env.INFOBIP_API_KEY;
+    const senderId = process.env.INFOBIP_SENDER_ID || "MyApp";
+
+    // 🔥 MODE DÉMO si InfoBip non configuré
+    if (!apiKey) {
+      console.log('🎯 ====================================');
+      console.log(`🎯 [DÉMO] CODE: ${resetCode}`);
+      console.log(`🎯 [DÉMO] InfoBip non configuré - API_KEY manquante`);
+      console.log(`🎯 [DÉMO] Pour: ${phoneNumber}`);
+      console.log('🎯 ====================================');
+      return;
     }
-    // Si le numéro n'a pas de +, l'ajouter
-    else if (!cleaned.startsWith('+')) {
-      cleaned = '+' + cleaned;
+
+    // Formater le numéro pour InfoBip
+    const formattedNumber = this.formatPhoneNumberForInfobip(phoneNumber);
+    console.log(`🔧 Numéro formaté pour InfoBip: ${formattedNumber}`);
+
+    // 🔥 REQUÊTE API INFOBIP
+    console.log('🔧 Envoi réel via InfoBip...');
+    const response = await fetch(`${baseUrl}/sms/2/text/advanced`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `App ${apiKey}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            destinations: [{ to: formattedNumber }],
+            from: senderId,
+            text: message
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`InfoBip error: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ SMS envoyé via InfoBip. Response:', result);
+    
+    // Afficher le code envoyé pour vérification
+    console.log('🎯 Code envoyé (réel):', resetCode);
+
+  } catch (error: any) {
+    console.error('❌ Erreur envoi SMS InfoBip:', error);
+    
+    // 🔥 MODE DÉMO en cas d'erreur
+    const codeMatch = message.match(/(\d{6})/);
+    const resetCode = codeMatch ? codeMatch[1] : '123456';
+    
+    console.log('🎯 ====================================');
+    console.log(`🎯 [DÉMO] CODE (erreur InfoBip): ${resetCode}`);
+    console.log(`🎯 [DÉMO] Pour: ${phoneNumber}`);
+    console.log(`🎯 [DÉMO] Erreur: ${error.message}`);
+    console.log('🎯 ====================================');
+    
+    // Ne pas bloquer en développement
+    if (process.env.NODE_ENV !== 'production') {
+      return;
     }
     
-    return cleaned;
+    throw new Error(`Échec envoi SMS InfoBip: ${error.message}`);
   }
+}
 
-  /**
-   * Méthode utilitaire: Nettoyer les codes expirés
-   */
+
+// Méthode utilitaire: Formater le numéro pour InfoBip
+private formatPhoneNumberForInfobip(phoneNumber: string): string {
+  let cleaned = phoneNumber.replace(/[^\d+]/g, '');
+  
+  console.log("🔧 Format InfoBip - Numéro avant:", phoneNumber, "Nettoyé:", cleaned);
+  
+  // Format Côte d'Ivoire pour InfoBip
+  if (cleaned.startsWith('0')) {
+    cleaned = '+225' + cleaned.substring(1);
+  } else if (cleaned.startsWith('225') && !cleaned.startsWith('+225')) {
+    cleaned = '+' + cleaned;
+  }
+  
+  // S'assurer que c'est un format international valide
+  if (!cleaned.startsWith('+')) {
+    cleaned = '+225' + cleaned; // Par défaut Côte d'Ivoire
+  }
+  
+  console.log("🔧 Format InfoBip - Numéro après:", cleaned);
+  return cleaned;
+}
+
+  //Méthode utilitaire: Nettoyer les codes expirés
   private cleanupExpiredCodes(): void {
     const now = new Date();
     let cleanedCount = 0;
