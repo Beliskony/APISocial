@@ -5,6 +5,8 @@ import { NotificationsProvider } from "../providers/Notifications.provider";
 import { AuthRequest } from "../middlewares/auth";
 import { INotification } from "../models/Notifications.model";
 import { TYPES } from "../config/TYPES";
+import { NotificationType } from "../services/Notifications.Service";
+
 
 @injectable()
 export class NotificationsController {
@@ -13,7 +15,7 @@ export class NotificationsController {
     private notificationsProvider: NotificationsProvider
   ) {}
 
-  // ✅ Créer une notification - CORRIGÉ avec type exporté
+  // ✅ Créer une notification - CORRIGÉ avec gestion des erreurs silencieuses
   async createNotification(req: AuthRequest, res: Response): Promise<void> {
     const senderId = req.user?._id;
     const { recipientId, type, content, postId } = req.body;
@@ -34,6 +36,16 @@ export class NotificationsController {
       return;
     }
 
+    // Valider le type de notification
+    const validTypes: NotificationType[] = ['like', 'comment', 'follow', 'mention', 'new_post'];
+    if (!validTypes.includes(type)) {
+      res.status(400).json({ 
+        success: false,
+        message: "Type de notification invalide" 
+      });
+      return;
+    }
+
     try {
       const notification: INotification = await this.notificationsProvider.createNotification(
         senderId,
@@ -49,6 +61,17 @@ export class NotificationsController {
         data: notification
       });
     } catch (error: any) {
+      // ✅ Gérer silencieusement les erreurs de notifications désactivées
+      if (error.message.includes("Notifications désactivées") || 
+          error.message.includes("Impossible de se notifier soi-même")) {
+        res.status(200).json({
+          success: true,
+          message: "Notification non créée (préférences utilisateur ou auto-notification)",
+          data: null
+        });
+        return;
+      }
+
       res.status(500).json({
         success: false,
         message: "Erreur lors de la création de la notification",
@@ -57,7 +80,7 @@ export class NotificationsController {
     }
   }
 
-  // ✅ Récupérer toutes les notifications (avec pagination) - CORRIGÉ
+  // ✅ Récupérer toutes les notifications (avec pagination)
   async getNotifications(req: AuthRequest, res: Response): Promise<void> {
     const userId = req.user?._id;
 
@@ -69,12 +92,11 @@ export class NotificationsController {
       return;
     }
 
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
 
     try {
-      // Utiliser la nouvelle méthode paginée
-      const result = await this.notificationsProvider.getNotificationsPaginated(userId, page, limit);
+      const result = await this.notificationsProvider.getUserNotifications(userId, page, limit);
       
       res.status(200).json({
         success: true,
@@ -84,7 +106,9 @@ export class NotificationsController {
           limit,
           total: result.total,
           unreadCount: result.unreadCount,
-          totalPages: Math.ceil(result.total / limit)
+          totalPages: Math.ceil(result.total / limit),
+          hasNext: page < Math.ceil(result.total / limit),
+          hasPrev: page > 1
         }
       });
     } catch (error: any) {
@@ -96,7 +120,7 @@ export class NotificationsController {
     }
   }
 
-  // ✅ Marquer une notification comme lue - CORRIGÉ avec sécurité
+  // ✅ Marquer une notification comme lue - CORRIGÉ
   async markAsRead(req: AuthRequest, res: Response): Promise<void> {
     const userId = req.user?._id;
     const { notificationId } = req.params;
@@ -109,24 +133,32 @@ export class NotificationsController {
       return;
     }
 
-    try {
-      // Utiliser la méthode sécurisée qui vérifie le propriétaire
-      const updated = await this.notificationsProvider.markAsReadForUser(notificationId, userId);
-      
-      if (!updated) {
-        res.status(404).json({ 
-          success: false,
-          message: "Notification introuvable ou accès non autorisé" 
-        });
-        return;
-      }
+    if (!notificationId) {
+      res.status(400).json({ 
+        success: false,
+        message: "ID de notification requis" 
+      });
+      return;
+    }
 
+    try {
+      // ✅ Utiliser la méthode principale (markAsRead au lieu de markAsReadForUser)
+      const updated = await this.notificationsProvider.markAsRead(notificationId, userId);
+      
       res.status(200).json({
         success: true,
         message: "Notification marquée comme lue",
         data: updated
       });
     } catch (error: any) {
+      if (error.message.includes("Notification non trouvée")) {
+        res.status(404).json({ 
+          success: false,
+          message: "Notification introuvable" 
+        });
+        return;
+      }
+
       res.status(500).json({
         success: false,
         message: "Erreur lors du marquage de la notification",
@@ -148,10 +180,12 @@ export class NotificationsController {
     }
 
     try {
-      await this.notificationsProvider.markAllAsRead(userId);
+      const result = await this.notificationsProvider.markAllAsRead(userId);
+      
       res.status(200).json({
         success: true,
-        message: "Toutes les notifications ont été marquées comme lues"
+        message: `${result.modifiedCount} notifications ont été marquées comme lues`,
+        data: result
       });
     } catch (error: any) {
       res.status(500).json({
@@ -189,7 +223,7 @@ export class NotificationsController {
     }
   }
 
-  // ✅ Supprimer une notification - CORRIGÉ avec sécurité
+  // ✅ Supprimer une notification - CORRIGÉ
   async deleteNotification(req: AuthRequest, res: Response): Promise<void> {
     const userId = req.user?._id;
     const { notificationId } = req.params;
@@ -202,9 +236,17 @@ export class NotificationsController {
       return;
     }
 
+    if (!notificationId) {
+      res.status(400).json({ 
+        success: false,
+        message: "ID de notification requis" 
+      });
+      return;
+    }
+
     try {
-      // Utiliser la méthode sécurisée qui vérifie le propriétaire
-      const success = await this.notificationsProvider.deleteNotificationForUser(notificationId, userId);
+      // ✅ Utiliser la méthode principale (deleteNotification au lieu de deleteNotificationForUser)
+      const success = await this.notificationsProvider.deleteNotification(notificationId, userId);
 
       if (!success) {
         res.status(404).json({ 
@@ -240,10 +282,12 @@ export class NotificationsController {
     }
 
     try {
-      await this.notificationsProvider.deleteAllUserNotifications(userId);
+      const result = await this.notificationsProvider.deleteAllUserNotifications(userId);
+      
       res.status(200).json({
         success: true,
-        message: "Toutes les notifications ont été supprimées"
+        message: `${result.deletedCount} notifications ont été supprimées`,
+        data: result
       });
     } catch (error: any) {
       res.status(500).json({
@@ -254,7 +298,7 @@ export class NotificationsController {
     }
   }
 
-  // 🆕 Récupérer les notifications par type
+  // ✅ Récupérer les notifications par type - CORRIGÉ
   async getNotificationsByType(req: AuthRequest, res: Response): Promise<void> {
     const userId = req.user?._id;
     const { type } = req.params;
@@ -267,7 +311,8 @@ export class NotificationsController {
       return;
     }
 
-    if (!type || !['like', 'comment', 'follow', 'new_post', 'mention'].includes(type)) {
+    const validTypes: NotificationType[] = ['like', 'comment', 'follow', 'mention', 'new_post'];
+    if (!type || !validTypes.includes(type as NotificationType)) {
       res.status(400).json({ 
         success: false,
         message: "Type de notification invalide" 
@@ -275,13 +320,13 @@ export class NotificationsController {
       return;
     }
 
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
 
     try {
       const result = await this.notificationsProvider.getNotificationsByType(
         userId, 
-        type as any, 
+        type as NotificationType, 
         page, 
         limit
       );
@@ -293,7 +338,9 @@ export class NotificationsController {
           page,
           limit,
           total: result.total,
-          totalPages: Math.ceil(result.total / limit)
+          totalPages: Math.ceil(result.total / limit),
+          hasNext: page < Math.ceil(result.total / limit),
+          hasPrev: page > 1
         }
       });
     } catch (error: any) {
@@ -305,7 +352,7 @@ export class NotificationsController {
     }
   }
 
-  // 🆕 Récupérer une notification spécifique
+  // ✅ Récupérer une notification spécifique
   async getNotificationById(req: AuthRequest, res: Response): Promise<void> {
     const userId = req.user?._id;
     const { notificationId } = req.params;
@@ -314,6 +361,14 @@ export class NotificationsController {
       res.status(401).json({ 
         success: false,
         message: "Non autorisé" 
+      });
+      return;
+    }
+
+    if (!notificationId) {
+      res.status(400).json({ 
+        success: false,
+        message: "ID de notification requis" 
       });
       return;
     }

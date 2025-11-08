@@ -54,9 +54,10 @@ export interface IUser extends Document {
       push: boolean;
       sms: boolean;
       newFollower: boolean;
-      newMessage: boolean;
       postLikes: boolean;
       postComments: boolean;
+      mentions: boolean;
+      newPosts: boolean;
     };
     language: string;
     theme: 'light' | 'dark' | 'auto';

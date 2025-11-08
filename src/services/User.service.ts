@@ -713,93 +713,147 @@ async getUserById(userId: string): Promise<IUser | null> {
     return cleaned;
   }
 
- 
 
-  // Méthode utilitaire: Envoyer un SMS via InfoBip
-private async sendSMS(phoneNumber: string, message: string): Promise<void> {
+  private async sendSMS(phoneNumber: string, message: string): Promise<void> {
   try {
-    console.log(`📱 [INFOBIP] Envoi SMS à: ${phoneNumber}`);
-    console.log(`📱 [INFOBIP] Message: ${message}`);
+    console.log('📱 [TERMII] Tentative envoi SMS...');
     
-    // Extraire le code pour l'affichage
-    const codeMatch = message.match(/(\d{6})/);
-    const resetCode = codeMatch ? codeMatch[1] : '123456';
+    const apiKey = process.env.TERMII_API_KEY;
+    const senderId = process.env.TERMII_SENDER_ID || "MyApp";
+    const baseUrl = process.env.TERMII_BASE_URL || "https://api.ng.termii.com/api";
 
-    // Configuration InfoBip
-    const baseUrl = process.env.INFOBIP_BASE_URL || "https://kqmg68.api.infobip.com";
-    const apiKey = process.env.INFOBIP_API_KEY;
-    const senderId = process.env.INFOBIP_SENDER_ID || "MyApp";
-
-    // 🔥 MODE DÉMO si InfoBip non configuré
+    // Mode démo si Termii non configuré
     if (!apiKey) {
-      console.log('🎯 ====================================');
-      console.log(`🎯 [DÉMO] CODE: ${resetCode}`);
-      console.log(`🎯 [DÉMO] InfoBip non configuré - API_KEY manquante`);
-      console.log(`🎯 [DÉMO] Pour: ${phoneNumber}`);
-      console.log('🎯 ====================================');
+      const resetCode = message.match(/(\d{6})/)?.[1] || '123456';
+      console.log('🎯 Mode démo Termii - Code:', resetCode);
       return;
     }
 
-    // Formater le numéro pour InfoBip
-    const formattedNumber = this.formatPhoneNumberForInfobip(phoneNumber);
-    console.log(`🔧 Numéro formaté pour InfoBip: ${formattedNumber}`);
+    // Formatage numéro pour Termii (sans +)
+    const formattedNumber = phoneNumber.replace('+', '');
+    console.log(`🔧 Numéro formaté Termii: ${formattedNumber}`);
 
-    // 🔥 REQUÊTE API INFOBIP
-    console.log('🔧 Envoi réel via InfoBip...');
-    const response = await fetch(`${baseUrl}/sms/2/text/advanced`, {
+    // 🔥 REQUÊTE TERMII
+    const response = await fetch(`${baseUrl}/send/sms`, {
       method: 'POST',
       headers: {
-        'Authorization': `App ${apiKey}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
       },
       body: JSON.stringify({
-        messages: [
-          {
-            destinations: [{ to: formattedNumber }],
-            from: senderId,
-            text: message
-          }
-        ]
+        to: formattedNumber,
+        from: senderId,
+        sms: message,
+        type: 'plain',
+        channel: 'dnd',  // 'dnd' = Plus fiable pour l'Afrique
+        api_key: apiKey
       })
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`InfoBip error: ${response.status} - ${errorText}`);
+      throw new Error(`Termii error: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('✅ SMS envoyé via InfoBip. Response:', result);
-    
-    // Afficher le code envoyé pour vérification
-    console.log('🎯 Code envoyé (réel):', resetCode);
+    console.log('✅ TERMII RÉPONSE:', result);
+
+    // Vérification du statut
+    if (result.message === 'Successfully Sent') {
+      console.log('🎉 SMS ENVOYÉ AVEC SUCCÈS VIA TERMII!');
+    } else {
+      console.log('⚠️  Réponse Termii:', result.message);
+    }
 
   } catch (error: any) {
-    console.error('❌ Erreur envoi SMS InfoBip:', error);
+    console.error('❌ ERREUR TERMII:', error.message);
     
-    // 🔥 MODE DÉMO en cas d'erreur
-    const codeMatch = message.match(/(\d{6})/);
-    const resetCode = codeMatch ? codeMatch[1] : '123456';
-    
-    console.log('🎯 ====================================');
-    console.log(`🎯 [DÉMO] CODE (erreur InfoBip): ${resetCode}`);
-    console.log(`🎯 [DÉMO] Pour: ${phoneNumber}`);
-    console.log(`🎯 [DÉMO] Erreur: ${error.message}`);
-    console.log('🎯 ====================================');
-    
-    // Ne pas bloquer en développement
-    if (process.env.NODE_ENV !== 'production') {
-      return;
-    }
-    
-    throw new Error(`Échec envoi SMS InfoBip: ${error.message}`);
+    // Fallback vers mode démo
+    const resetCode = message.match(/(\d{6})/)?.[1] || '123456';
+    console.log('🎯 Fallback démo - Code:', resetCode);
   }
 }
 
+// Méthode utilitaire: Envoyer un SMS via Twilio
+/* 
+private async sendSMS(phoneNumber: string, message: string): Promise<void> {
+  try {
+    console.log('🔍 =============== DÉBUT sendSMS ===============');
+    
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    const twilioPhoneNumber = process.env.TWILIO_PHONE_NUMBER;
 
-// Méthode utilitaire: Formater le numéro pour InfoBip
-private formatPhoneNumberForInfobip(phoneNumber: string): string {
+    console.log('🔧 CONFIGURATION:');
+    console.log(`   - Account SID: ${accountSid ? '✓' : '✗'}`);
+    console.log(`   - Auth Token: ${authToken ? '✓' : '✗'}`);
+    console.log(`   - Twilio Number: ${twilioPhoneNumber}`);
+    console.log(`   - Destination: ${phoneNumber}`);
+    console.log(`   - Message: ${message}`);
+
+    // Validation
+    if (!accountSid?.startsWith('AC')) {
+      throw new Error('Account SID invalide');
+    }
+    if (!authToken) {
+      throw new Error('Auth Token manquant');
+    }
+    if (twilioPhoneNumber !== '+15025212077') {
+      throw new Error(`Mauvais numéro Twilio: ${twilioPhoneNumber}`);
+    }
+
+    console.log('🚀 INITIALISATION CLIENT TWILIO...');
+    const client = require('twilio')(accountSid, authToken);
+
+    console.log('📤 ENVOI DU SMS...');
+    const result = await client.messages.create({
+      body: message,
+      from: twilioPhoneNumber,
+      to: phoneNumber  
+    });
+
+    console.log('✅ =============== SUCCÈS ===============');
+    console.log(`✅ SMS ENVOYÉ AVEC SUCCÈS !`);
+    console.log(`✅ SID: ${result.sid}`);
+    console.log(`✅ Status: ${result.status}`);
+    console.log(`✅ Date: ${result.dateCreated}`);
+    console.log(`✅ De: ${result.from}`);
+    console.log(`✅ À: ${result.to}`);
+    console.log(`✅ Prix: ${result.price}`);
+    console.log(`✅ Direction: ${result.direction}`);
+    console.log('✅ =====================================');
+
+    // Vérification supplémentaire
+    if (result.status !== 'sent' && result.status !== 'queued' && result.status !== 'delivered') {
+      console.warn(`⚠️  Status anormal: ${result.status}`);
+    }
+
+  } catch (error: any) {
+    console.error('❌ =============== ERREUR CRITIQUE ===============');
+    console.error(`❌ Code: ${error.code}`);
+    console.error(`❌ Status: ${error.status}`);
+    console.error(`❌ More Info: ${error.moreInfo}`);
+    console.error(`❌ Message: ${error.message}`);
+    
+    if (error.code === 21211) {
+      console.error('🔍 Problème: Numéro de destination invalide');
+    } else if (error.code === 21408) {
+      console.error('🔍 Problème: Pas d\'autorisation pour ce numéro');
+    } else if (error.code === 21610) {
+      console.error('🔍 Problème: Numéro Twilio non capable de SMS');
+    }
+    
+    console.error('❌ =============================================');
+
+    // Code de fallback
+    const codeMatch = message.match(/(\d{6})/);
+    const resetCode = codeMatch ? codeMatch[1] : '123456';
+    console.log(`🎯 Code pour test: ${resetCode}`);
+  }
+} */
+
+
+// Méthode utilitaire: Formater le numéro pour Twilio
+private formatPhoneNumberForTwilio(phoneNumber: string): string {
   let cleaned = phoneNumber.replace(/[^\d+]/g, '');
   
   console.log("🔧 Format InfoBip - Numéro avant:", phoneNumber, "Nettoyé:", cleaned);

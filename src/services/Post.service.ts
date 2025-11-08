@@ -203,13 +203,13 @@ export class PostService {
 
       // Notification au propriétaire du post
       if (post.author.toString() !== userId) {
-        await this.notificationsService.createNotification(
-          userId,
-          post.author.toString(),
-          'like',
-          `a aimé votre publication`,
-          postId
-        );
+        await this.notificationsService.createNotification({
+          sender: userId,
+          recipient: post.author.toString(),
+          type: 'like',
+          content: `a aimé votre publication`,
+          post:postId
+      });
       }
 
       return { action: 'liked', likesCount: post.engagement.likesCount };
@@ -260,13 +260,13 @@ export class PostService {
 
     // Notification au propriétaire du post original
     if (originalPost.author.toString() !== userId) {
-      await this.notificationsService.createNotification(
-        userId,
-        originalPost.author.toString(),
-        'new_post',
-        `a partagé votre publication`,
-        originalPostId
-      );
+      await this.notificationsService.createNotification({
+        sender: userId,
+        recipient: originalPost.author.toString(),
+        type: 'new_post',
+        content: `a partagé votre publication`,
+        post: originalPostId
+    });
     }
 
     return sharedPost;
@@ -419,13 +419,13 @@ async deletePost(postId: string, userId: string): Promise<boolean> {
     if (!author || !author.social?.followers?.length) return;
 
     for (const followerId of author.social.followers) {
-      await this.notificationsService.createNotification(
-        post.author.toString(),
-        followerId.toString(),
-        'new_post',
-        `${author.username} a publié un nouveau post`,
-        post._id.toString()
-      );
+      await this.notificationsService.createNotification({
+        sender: post.author.toString(),
+        recipient: followerId.toString(),
+        type: 'new_post',
+        content: `${author.username} a publié un nouveau post`,
+        post: post._id.toString()
+      });
     }
   }
 
@@ -433,13 +433,13 @@ async deletePost(postId: string, userId: string): Promise<boolean> {
     if (!post.metadata.mentions.length) return;
 
     for (const mentionedUserId of post.metadata.mentions) {
-      await this.notificationsService.createNotification(
-        post.author.toString(),
-        mentionedUserId.toString(),
-        'new_post',
-        `vous a mentionné dans une publication`,
-        post._id.toString()
-      );
+      await this.notificationsService.createNotification({
+        sender: post.author.toString(),
+        recipient: mentionedUserId.toString(),
+        type: 'new_post',
+        content: `vous a mentionné dans une publication`,
+        post: post._id.toString()
+    });
     }
   }
 

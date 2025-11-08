@@ -55,11 +55,40 @@ export class CommentService {
     parentCommentType: typeof commentData.parentComment,
     content: commentData.content.text.substring(0, 50) + '...'
   });
+
+    // ✅ CORRECTION CRITIQUE - Normaliser l'author
+  let authorId: Types.ObjectId;
+
+   if (typeof commentData.author === 'string') {
+    // Si c'est un string, convertir en ObjectId
+    authorId = new Types.ObjectId(commentData.author);
+  } else if (commentData.author instanceof Types.ObjectId) {
+    // Si c'est déjà un ObjectId
+    authorId = commentData.author;
+  } else if (commentData.author && (commentData.author as any)._id) {
+    // Si c'est un objet user complet, prendre l'ID
+    authorId = new Types.ObjectId((commentData.author as any)._id);
+  } else {
+    throw new Error('Format author invalide');
+  }
+
+
+    // ✅ CORRECTION - Normaliser parentComment si présent
+  let parentCommentId: Types.ObjectId | undefined;
+  if (commentData.parentComment) {
+    if (typeof commentData.parentComment === 'string') {
+      parentCommentId = new Types.ObjectId(commentData.parentComment);
+    } else if (commentData.parentComment instanceof Types.ObjectId) {
+      parentCommentId = commentData.parentComment;
+    } else {
+      console.warn('⚠️ Format parentComment invalide, ignoré:', commentData.parentComment);
+    }
+  }
   
     const newComment = new CommentModel({
-      author: commentData.author,
+      author: authorId,
       post: commentData.post,
-      parentComment: commentData.parentComment,
+      parentComment: parentCommentId,
       content: {
         text: commentData.content.text,
         media: commentData.content.media || { images: [], videos: [] }
@@ -243,44 +272,117 @@ async getCommentsByPostId(postId: string, page: number = 1, limit: number = 20):
 
   // ✅ Supprimer un commentaire - VERSION CORRIGÉE
 async deleteComment(commentId: string, userId: string): Promise<boolean> {
-    const comment = await CommentModel.findById(commentId);
+    console.log('🔍 DEBUG deleteComment - Début', { commentId, userId });
     
-    if (!comment) {
-        throw new Error("Commentaire non trouvé");
-    }
+    try {
+        const comment = await CommentModel.findById(commentId);
+        
+        if (!comment) {
+            console.log('❌ Commentaire non trouvé');
+            throw new Error("Commentaire non trouvé");
+        }
 
-    // Vérifier si l'utilisateur est l'auteur ou l'auteur du post
-    const post = await PostModel.findById(comment.post);
-    const isPostAuthor = post && post.author.toString() === userId;
-    const isCommentAuthor = comment.author.toString() === userId;
+        // ✅ LOG ICI - quand le commentaire existe encore
+        console.log('✅ DEBUG - Commentaire trouvé:', {
+            commentId: comment._id,
+            author: comment.author.toString(),
+            post: comment.post.toString(),
+            hasParent: !!comment.parentComment,
+            parentComment: comment.parentComment
+        });
 
-    if (!isCommentAuthor && !isPostAuthor) {
-        throw new Error("Non autorisé à supprimer ce commentaire");
-    }
+        // Vérifier si l'utilisateur est l'auteur ou l'auteur du post
+        const post = await PostModel.findById(comment.post);
+        
+        if (!post) {
+            console.log('❌ Post non trouvé pour le commentaire');
+            throw new Error("Post associé non trouvé");
+        }
 
-    // 🆕 SUPPRESSION PHYSIQUE de la base de données
-    await CommentModel.findByIdAndDelete(commentId);
+        console.log('✅ DEBUG - Post trouvé:', {
+            postId: post._id,
+            postAuthor: post.author.toString(),
+            postCommentsCount: post.engagement?.commentsCount
+        });
 
-    // Mettre à jour le compteur du post
-    await PostModel.findByIdAndUpdate(comment.post, {
-        $inc: { 'engagement.commentsCount': -1 },
-        $pull: { 'engagement.comments': comment._id }
-    });
+        const isPostAuthor = post.author.toString() === userId;
+        const isCommentAuthor = comment.author.toString() === userId;
 
-    // Si c'est une réponse, la retirer du commentaire parent
-    if (comment.parentComment) {
-        await CommentModel.findByIdAndUpdate(
-            comment.parentComment,
-            { $pull: { 'engagement.replies': comment._id } }
+        console.log('🔍 DEBUG - Autorisations:', {
+            isCommentAuthor,
+            isPostAuthor, 
+            userId,
+            commentAuthor: comment.author.toString(),
+            postAuthor: post.author.toString()
+        });
+
+        if (!isCommentAuthor && !isPostAuthor) {
+            console.log('❌ Non autorisé à supprimer ce commentaire');
+            throw new Error("Non autorisé à supprimer ce commentaire");
+        }
+
+        console.log('✅ DEBUG - Autorisation OK, début suppression...');
+
+        // 🆕 SUPPRESSION PHYSIQUE de la base de données
+        console.log('🗑️ Suppression du commentaire principal...');
+        const deleteResult = await CommentModel.findByIdAndDelete(commentId);
+        
+        if (!deleteResult) {
+            console.log('❌ Échec de la suppression du commentaire');
+            throw new Error("Échec de la suppression du commentaire");
+        }
+        console.log('✅ Commentaire principal supprimé');
+
+        // Mettre à jour le compteur du post
+        console.log('🔧 Mise à jour du compteur du post...');
+        const updatedPost = await PostModel.findByIdAndUpdate(
+            comment.post,
+            {
+                $inc: { 'engagement.commentsCount': -1 },
+                $pull: { 'engagement.comments': comment._id }
+            },
+            { new: true }
         );
+        console.log('✅ Post mis à jour:', {
+            nouveauCount: updatedPost?.engagement.commentsCount
+        });
+
+        // Si c'est une réponse, la retirer du commentaire parent
+        if (comment.parentComment) {
+            console.log('🔧 Retrait de la réponse du commentaire parent...');
+            await CommentModel.findByIdAndUpdate(
+                comment.parentComment,
+                { $pull: { 'engagement.replies': comment._id } }
+            );
+            console.log('✅ Réponse retirée du parent');
+        } else {
+            console.log('ℹ️  Pas de commentaire parent (commentaire racine)');
+        }
+
+        // 🆕 Supprimer également les réponses associées si elles existent
+        console.log('🔧 Recherche des réponses à supprimer...');
+        const repliesCount = await CommentModel.countDocuments({ parentComment: commentId });
+        console.log(`🔧 ${repliesCount} réponses trouvées`);
+        
+        if (repliesCount > 0) {
+            const deleteRepliesResult = await CommentModel.deleteMany({ parentComment: commentId });
+            console.log(`✅ ${deleteRepliesResult.deletedCount} réponses supprimées`);
+        }
+
+        console.log('🎉 SUPPRESSION TERMINÉE AVEC SUCCÈS');
+        return true;
+
+    } catch (error: any) {
+        console.error('💥 ERREUR CRITIQUE deleteComment:', {
+            message: error.message,
+            stack: error.stack,
+            commentId,
+            userId
+        });
+        throw error;
     }
-
-    // 🆕 Supprimer également les réponses associées si elles existent
-    await CommentModel.deleteMany({ parentComment: commentId });
-
-    return true;
 }
-  // 🆕 NOUVELLES FONCTIONNALITÉS
+
 
   // 👍 Gestion des likes sur commentaires
   async toggleLike(commentId: string, userId: string): Promise<{ action: 'liked' | 'unliked', likesCount: number }> {
@@ -306,13 +408,13 @@ async deleteComment(commentId: string, userId: string): Promise<boolean> {
 
       // Notification à l'auteur du commentaire
       if (comment.author.toString() !== userId) {
-        await this.notificationsService.createNotification(
-          userId,
-          comment.author.toString(),
-          'like',
-          `a aimé votre commentaire`,
-          comment.post.toString()
-        );
+        await this.notificationsService.createNotification({
+          sender: userId,
+          recipient: comment.author.toString(),
+          type: 'like',
+          content: `a aimé votre commentaire`,
+          post: comment.post.toString()
+      });
       }
 
       return { action: 'liked', likesCount: comment.engagement.likesCount };
@@ -353,47 +455,66 @@ async deleteComment(commentId: string, userId: string): Promise<boolean> {
 
   // 🔧 MÉTHODES PRIVÉES
 
-  private async notifyPostOwner(comment: IComment): Promise<void> {
-    const post = await PostModel.findById(comment.post).populate('author');
-    if (!post || post.author.toString() === comment.author.toString()) return;
-
-    await this.notificationsService.createNotification(
-      comment.author.toString(),
-      post.author.toString(),
-      'comment',
-      `a commenté votre publication`,
-      comment.post.toString()
-    );
-  }
-
-  private async notifyParentCommentAuthor(comment: IComment): Promise<void> {
-    if (!comment.parentComment) return;
-
-    const parentComment = await CommentModel.findById(comment.parentComment).populate('author');
-    if (!parentComment || parentComment.author.toString() === comment.author.toString()) return;
-
-    await this.notificationsService.createNotification(
-      comment.author.toString(),
-      parentComment.author.toString(),
-      'comment',
-      `a répondu à votre commentaire`,
-      comment.post.toString()
-    );
-  }
 
   private async notifyMentions(comment: IComment): Promise<void> {
     if (!comment.metadata.mentions.length) return;
 
     for (const mentionedUserId of comment.metadata.mentions) {
       if (mentionedUserId.toString() !== comment.author.toString()) {
-        await this.notificationsService.createNotification(
-          comment.author.toString(),
-          mentionedUserId.toString(),
-          'mention',
-          `vous a mentionné dans un commentaire`,
-          comment.post.toString()
-        );
+        await this.notificationsService.createNotification({
+          sender: comment.author.toString(),
+          recipient: mentionedUserId.toString(),
+          type: 'mention',
+          content: `vous a mentionné dans un commentaire`,
+          post: comment.post.toString()
+        });
       }
     }
   }
+
+  // Dans CommentService.ts - GESTION ROBUSTE DES NOTIFICATIONS
+private async notifyPostOwner(comment: IComment): Promise<void> {
+  try {
+    const post = await PostModel.findById(comment.post).populate('author');
+    if (!post || post.author.toString() === comment.author.toString()) return;
+
+    await this.notificationsService.createNotification({
+      sender: comment.author.toString(),
+      recipient: post.author.toString(),
+      type: 'comment',
+      content:`a commenté votre publication: "${comment.content.text.substring(0, 50)}..."`,
+      post: comment.post.toString()
+    });
+  } catch (error: any) {
+    // Logger mais ne pas bloquer si l'utilisateur a désactivé les notifications
+    if (error.message.includes("Notifications désactivées")) {
+      console.log(`📵 Notifications désactivées pour le propriétaire du post`);
+    } else {
+      console.warn('❌ Échec notification propriétaire:', error.message);
+    }
+  }
+}
+
+private async notifyParentCommentAuthor(comment: IComment): Promise<void> {
+  try {
+    if (!comment.parentComment) return;
+
+    const parentComment = await CommentModel.findById(comment.parentComment).populate('author');
+    if (!parentComment || parentComment.author.toString() === comment.author.toString()) return;
+
+    await this.notificationsService.createNotification({
+      sender: comment.author.toString(),
+      recipient: parentComment.author.toString(),
+      type: 'comment', 
+      content: `a répondu à votre commentaire`,
+      post: comment.post.toString()
+    });
+  } catch (error: any) {
+    if (error.message.includes("Notifications désactivées")) {
+      console.log(`📵 Notifications désactivées pour l'auteur du commentaire parent`);
+    } else {
+      console.warn('❌ Échec notification parent:', error.message);
+    }
+  }
+}
 }
