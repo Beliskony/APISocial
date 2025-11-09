@@ -308,6 +308,31 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
 
     // 🆕 NOUVELLES FONCTIONNALITÉS
 
+    // get post by Id
+    async getPostById(req: AuthRequest, res:Response): Promise<void>{
+        try {
+          const {postId} = req.params;
+          if (!postId) {
+            res.status(400).json({ success: false, message: 'ID du post requis' });
+            return;
+          }
+
+            console.log('📥 Requête récupération post ID:', postId);
+            const post = await this.postProvider.getPostById(postId);
+
+            if (!post) {
+                res.status(404).json({success: false, message: 'Post non trouve'});
+                return;
+            }
+
+            res.status(200).json({success:true, message: 'Post recupere avec succes', data: post});
+        } catch (error) {
+            console.error('❌ Erreur contrôleur getPostById:', error);
+            res.status(500).json({ success: false, message: 'Erreur interne du serveur', error: process.env.NODE_ENV === 'development' ? error: undefined });
+      }
+    }
+    
+
     // 📱 Fil d'actualité intelligent
     async getFeed(req: AuthRequest, res: Response): Promise<void> {
         try {

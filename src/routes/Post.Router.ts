@@ -167,6 +167,12 @@ export class PostRouter {
             authenticateJWT, 
             this.postController.getAllPosts.bind(this.postController)
         );
+
+        this.router.get(
+            "/:postId", 
+            authenticateJWT,
+            this.postController.getPostById.bind(this.postController)
+        )
     }
 
     public getRouter(): Router {

@@ -79,6 +79,11 @@ export class PostProvider {
 
     // 🆕 NOUVELLES MÉTHODES POUR LES FONCTIONNALITÉS AVANCÉES
 
+    //get post by Id
+    async getPostById(postId: string): Promise<IPost | null>{
+        return this.postService.getPostById(postId);
+    }
+
     // 📱 Fil d'actualité
     async getFeed(userId: string, page: number = 1, limit: number = 20): Promise<{ posts: IPost[], total: number }> {
         return this.postService.getFeed(userId, page, limit);

@@ -368,6 +368,40 @@ async deletePost(postId: string, userId: string): Promise<boolean> {
       .exec();
   }
 
+  // recuperer post par ID
+  async getPostById(postId: string): Promise<IPost | null>{
+    try {
+      console.log('recherche de post par ID: ', postId);
+       // Validation de l'ID
+        if (!postId || !Types.ObjectId.isValid(postId)) {
+          throw new Error('ID de post invalide');
+        }
+
+      const post = await PostModel.findById(postId)
+      .populate('author', 'username profile.profilePicture')
+      .populate('engagement.likes', 'username profile.profilePicture')
+      .populate('engagement.saves', 'username profile.profilePicture')
+      .exec();
+
+      if (!post) {
+      console.log('❌ Post non trouvé avec ID:', postId);
+      return null;
+    }
+
+    console.log('✅ Post trouvé:', {
+      id: post._id,
+      auteur: post.author,
+      contenu: post.content?.text?.substring(0, 50) + '...'
+    });
+
+    return post;
+  
+    } catch (error) {
+      console.error('❌ Erreur récupération post par ID:', {postId, error: error });
+      throw new Error(`Erreur lors de la récupération du post: ${error}`);
+    }
+  }
+
   // ✅ Récupérer tous les posts
   async getAllPosts(userId: string, page = 1, limit = 20): Promise<IPost[]> {
     const currentUser = await UserModel.findById(userId).populate('social.following');
