@@ -112,11 +112,11 @@ export class NotificationsRouter {
             this.notificationsController.deleteAllUserNotifications.bind(this.notificationsController)
         );
 
-        //this.router.post(
-          //  '/register-push-token', 
-            //authenticateJWT, 
-            //this.notificationsController.registerPushToken.bind(this.notificationsController)
-        //);
+        this.router.post(
+            '/register-push-token', 
+            authenticateJWT, 
+            this.notificationsController.registerPushToken.bind(this.notificationsController)
+        );
 
         this.router.post(
             '/remove-push-token', 
