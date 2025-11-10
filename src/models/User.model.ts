@@ -1,6 +1,13 @@
 // src/infrastructure/database/models/User.model.ts
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
+export interface IDevice {
+  expoPushToken: string;
+  deviceId: string;
+  platform: 'ios' | 'android' | 'web';
+  lastActive: Date;
+}
+
 export interface IUser extends Document {
   _id: Types.ObjectId;
   username: string;
@@ -43,6 +50,7 @@ export interface IUser extends Document {
     lockUntil?: Date;
     twoFactorEnabled: boolean;
   };
+  devices: IDevice[]
   preferences: {
     privacy: {
       profile: 'public' | 'friends' | 'private';
@@ -80,6 +88,15 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+
+const deviceSchema = new Schema({
+  expoPushToken: { type: String, required: true, unique: true },
+  deviceId: { type: String, required: true },
+  platform: { type: String, enum: ['ios', 'android', 'web'], required: true },
+  lastActive: { type: Date, default: Date.now }
+});
+
 
 const UserSchema: Schema = new Schema(
   {

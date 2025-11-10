@@ -6,6 +6,7 @@ import { AuthRequest } from "../middlewares/auth";
 import { INotification } from "../models/Notifications.model";
 import { TYPES } from "../config/TYPES";
 import { NotificationType } from "../services/Notifications.Service";
+import UserModel from "../models/User.model";
 
 
 @injectable()
@@ -14,6 +15,94 @@ export class NotificationsController {
     @inject(TYPES.NotificationsProvider)
     private notificationsProvider: NotificationsProvider
   ) {}
+
+  //enregistrer le token push
+  async registerPushToken(req:AuthRequest, res: Response): Promise<void> {
+     try {
+      const userId = req.user?._id; // Depuis votre middleware d'authentification
+      const { expoPushToken, deviceId, platform } = req.body;
+
+      if (!expoPushToken || !deviceId || !platform) {
+        res.status(400).json({
+          success: false,
+          message: 'Token, deviceId et platform sont requis'
+        });
+        return;
+      }
+
+      const user = await UserModel.findById(userId);
+      if (!user) {
+        res.status(404).json({
+          success: false,
+          message: 'Utilisateur non trouvé'
+        });
+        return;
+      }
+
+      // Vérifier si le device existe déjà
+      const existingDeviceIndex = user.devices.findIndex(
+        device => device.deviceId === deviceId
+      );
+
+      if (existingDeviceIndex !== -1) {
+        // Mettre à jour le token existant
+        user.devices[existingDeviceIndex].expoPushToken = expoPushToken;
+        user.devices[existingDeviceIndex].lastActive = new Date();
+        user.devices[existingDeviceIndex].platform = platform;
+      } else {
+        // Ajouter un nouveau device
+        user.devices.push({
+          expoPushToken,
+          deviceId,
+          platform,
+          lastActive: new Date()
+        });
+      }
+
+      await user.save();
+
+      res.json({
+        success: true,
+        message: 'Token push enregistré avec succès',
+        data: {deviceId, platform, tokensCount: user.devices.length}
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur enregistrement token:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur serveur'
+      });
+    }
+  }
+
+   // ✅ SUPPRIMER UN TOKEN PUSH
+  async removePushToken(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?._id;
+      const { deviceId } = req.body;
+
+      await UserModel.findByIdAndUpdate(userId, {
+        $pull: { devices: { deviceId } }},
+        {new: true}
+      );
+
+      res.json({
+        success: true,
+        message: 'Token push supprimé'
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur suppression token:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur serveur'
+      });
+    }
+  }
+
+
+  
 
   // ✅ Créer une notification - CORRIGÉ avec gestion des erreurs silencieuses
   async createNotification(req: AuthRequest, res: Response): Promise<void> {

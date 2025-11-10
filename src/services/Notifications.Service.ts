@@ -3,6 +3,7 @@ import { injectable } from "inversify";
 import { Types } from "mongoose";
 import NotificationModel, { INotification } from "../models/Notifications.model";
 import UserModel from "../models/User.model";
+import { PushNotificationService } from "./PushNotification.service";
 
 export type NotificationType = 'like' | 'comment' | 'follow' | 'mention' | 'new_post';
 
@@ -16,6 +17,11 @@ export interface CreateNotificationData {
 
 @injectable()
 export class NotificationsService {
+  private pushService: PushNotificationService;
+
+  constructor() {
+    this.pushService = new PushNotificationService(); // ✅ Initialisation simple
+  }
   
   // ✅ MÉTHODE PRINCIPALE REFONDUE - AVEC VALIDATION STRICTE
   async createNotification(data: CreateNotificationData): Promise<INotification> {
@@ -80,6 +86,8 @@ export class NotificationsService {
         { path: 'post', select: 'text media' }
       ]);
 
+      await this.sendPushNotificationIfEnabled(savedNotification, recipient, sender.username);
+
       console.log('✅ NOTIFICATION - Créée avec succès:', {
         id: savedNotification._id,
         type: savedNotification.type,
@@ -103,6 +111,77 @@ export class NotificationsService {
       }
       
       throw new Error(`Échec de la création de notification: ${error.message}`);
+    }
+  }
+
+    // ✅ ENVOYER NOTIFICATION PUSH
+  private async sendPushNotificationIfEnabled(
+    notification: INotification, 
+    recipient: any,
+    senderUsername: string
+  ): Promise<void> {
+    try {
+      const preferences = recipient.preferences?.notifications;
+      
+      // Vérifier les préférences globales de push
+      if (preferences?.push === false) {
+        console.log('📵 Notifications push désactivées pour:', recipient.username);
+        return;
+      }
+
+      // Vérifier les préférences par type
+      const preferenceMapping: Record<NotificationType, keyof typeof preferences> = {
+        'like': 'postLikes',
+        'comment': 'postComments',
+        'follow': 'newFollower',
+        'mention': 'mentions',
+        'new_post': 'newPosts'
+      };
+
+      const preferenceKey = preferenceMapping[notification.type];
+      if (preferences[preferenceKey] === false) {
+        console.log(`📵 Notifications ${notification.type} désactivées pour:`, recipient.username);
+        return;
+      }
+
+      // Vérifier si l'utilisateur a des devices enregistrés
+      if (!recipient.devices || recipient.devices.length === 0) {
+        console.log('📱 Aucun device enregistré pour:', recipient.username);
+        return;
+      }
+
+      // Récupérer les tokens push valides
+      const pushTokens = recipient.devices
+        .filter((device: any) => device.expoPushToken && device.expoPushToken !== '')
+        .map((device: any) => device.expoPushToken);
+
+      if (pushTokens.length === 0) {
+        console.log('📱 Aucun token push valide pour:', recipient.username);
+        return;
+      }
+
+      // Préparer la notification push
+      const pushTitle = this.getPushTitle(notification.type);
+      const pushBody = notification.content || this.generateNotificationContent(notification.type, senderUsername);
+
+      const pushData = {
+        notificationId: notification._id,
+        type: notification.type,
+        senderId: (notification.sender as any)._id.toString(),
+        senderUsername: senderUsername,
+        ...(notification.post && { postId: (notification.post as any)._id.toString() }),
+        screen: 'Notifications',
+        timestamp: new Date().toISOString()
+      };
+
+      // ✅ UTILISATION DE VOTRE SERVICE PUSH EXISTANT
+      await this.pushService.sendToMultipleUsers(pushTokens, pushTitle, pushBody, pushData);
+
+      console.log(`📱 Notification push envoyée à ${pushTokens.length} device(s) pour:`, recipient.username);
+
+    } catch (error) {
+      console.error('❌ Erreur envoi notification push:', error);
+      // Ne pas bloquer le flux principal en cas d'erreur push
     }
   }
 
@@ -139,6 +218,20 @@ export class NotificationsService {
       throw new Error(`Données de notification invalides: ${errors.join(', ')}`);
     }
   }
+
+    // ✅ TITRES PUSH PAR TYPE
+  private getPushTitle(type: NotificationType): string {
+    const titles: Record<NotificationType, string> = {
+      'like': '❤️ Nouveau like',
+      'comment': '💬 Nouveau commentaire',
+      'follow': '👤 Nouvel abonné',
+      'mention': '📍 Mention',
+      'new_post': '📝 Nouvelle publication'
+    };
+
+    return titles[type] || '🔔 Nouvelle notification';
+  }
+
 
   // ✅ VÉRIFICATION DES PRÉFÉRENCES
   private canSendNotification(recipient: any, type: NotificationType): boolean {
