@@ -165,7 +165,7 @@ export class NotificationsService {
       const pushBody = notification.content || this.generateNotificationContent(notification.type, senderUsername);
 
       const pushData = {
-        notificationId: notification._id,
+        notificationId: (notification._id as Types.ObjectId).toString(),
         type: notification.type,
         senderId: (notification.sender as any)._id.toString(),
         senderUsername: senderUsername,
