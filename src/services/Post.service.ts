@@ -454,7 +454,7 @@ async deletePost(postId: string, userId: string): Promise<boolean> {
 
     for (const followerId of author.social.followers) {
       await this.notificationsService.createNotification({
-        sender: post.author.toString(),
+        sender: post.author._id.toString(),
         recipient: followerId.toString(),
         type: 'new_post',
         content: `${author.username} a publié un nouveau post`,

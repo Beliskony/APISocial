@@ -4,14 +4,16 @@ import { inject, injectable } from 'inversify';
 import { PostProvider } from '../providers/Post.provider';
 import { AuthRequest } from '../middlewares/auth';
 import { MediaService } from '../services/Media.service';
-import { IPost } from '../models/Post.model';
 import { TYPES } from '../config/TYPES';
+import { UserProvider } from '../providers/User.provider';
+import UserModel from '../models/User.model';
 
 @injectable()
 export class PostController {
     constructor( 
         @inject(TYPES.PostProvider) private postProvider: PostProvider,
-        @inject(TYPES.MediaService) private mediaService: MediaService    
+        @inject(TYPES.MediaService) private mediaService: MediaService,
+        @inject(TYPES.UserProvider)private userProvider: UserProvider    
     ) {}
 
     // ✅ Création de post avec médias
@@ -67,6 +69,7 @@ export class PostController {
             type,
             sharedPost
         );
+
         
         res.status(201).json({
             success: true,
