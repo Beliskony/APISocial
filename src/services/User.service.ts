@@ -563,7 +563,7 @@ async getUserById(userId: string): Promise<IUser | null> {
     console.log('🎯 ====================================');
 
       // Envoyer le SMS via Twilio
-      const message = `Votre code de réinitialisation MyApp est: ${resetCode}. Ce code expire dans 10 minutes.`;
+      const message = `Votre code de réinitialisation DigitalGick est: ${resetCode}. Ce code expire dans 10 minutes.`;
       await this.sendSMS(normalizedPhone, message);
 
       console.log("✅ CODE ENVOYÉ - Code généré:", resetCode, "pour:", normalizedPhone);
@@ -714,13 +714,12 @@ async getUserById(userId: string): Promise<IUser | null> {
   }
 
 
-  private async sendSMS(phoneNumber: string, message: string): Promise<void> {
+ /* private async sendSMS(phoneNumber: string, message: string): Promise<void> {
   try {
     console.log('📱 [TERMII] Tentative envoi SMS...');
     
     const apiKey = process.env.TERMII_API_KEY;
-    const senderId = process.env.TERMII_SENDER_ID || "MyApp";
-    const baseUrl = process.env.TERMII_BASE_URL || "https://api.ng.termii.com/api";
+    const senderId = process.env.TERMII_SENDER_ID ;
 
     // Mode démo si Termii non configuré
     if (!apiKey) {
@@ -733,35 +732,56 @@ async getUserById(userId: string): Promise<IUser | null> {
     const formattedNumber = phoneNumber.replace('+', '');
     console.log(`🔧 Numéro formaté Termii: ${formattedNumber}`);
 
-    // 🔥 REQUÊTE TERMII
-    const response = await fetch(`${baseUrl}/send/sms`, {
+    // Extraire le code du message
+    const resetCode = message.match(/(\d{6})/)?.[1] || '123456';
+
+
+  
+    const payload = {
+      api_key: apiKey,
+      message_type: "NUMERIC",
+      to: formattedNumber,
+      from: '2250788557370',
+      channel: "generic", // ou "generic"
+      pin_attempts: 3, // Nombre de tentatives
+      pin_time_to_live: 10, // Durée en minutes
+      pin_length: 6, // Longueur du code
+      pin_placeholder: `< ${resetCode} >`, // Placeholder pour le code
+      sms: `Votre code de réinitialisation DigitalGick est < ${resetCode} >`, // Message avec placeholder
+      pin_type: "NUMERIC"
+    };
+
+    console.log('📤 Payload Termii OTP:', JSON.stringify(payload, null, 2));
+
+    const response = await fetch('https://v3.api.termii.com/api/sms/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        to: formattedNumber,
-        from: senderId,
-        sms: message,
-        type: 'plain',
-        channel: 'dnd',  // 'dnd' = Plus fiable pour l'Afrique
-        api_key: apiKey
-      })
+      body: JSON.stringify(payload)
     });
 
+     const responseText = await response.text();
+    console.log('📥 Réponse brute Termii:', responseText);
+   
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Termii error: ${response.status} - ${errorText}`);
     }
 
-    const result = await response.json();
-    console.log('✅ TERMII RÉPONSE:', result);
+     const result = JSON.parse(responseText);
+    console.log('✅ TERMII OTP RÉPONSE:', result);
 
     // Vérification du statut
-    if (result.message === 'Successfully Sent') {
+    if (result.status === '200' || result.smsStatus === 'Message Sent') {
       console.log('🎉 SMS ENVOYÉ AVEC SUCCÈS VIA TERMII!');
+      console.log('📊 Détails:', {
+        pinId: result.pinId,
+        messageId: result.message_id_str,
+        phoneNumber: result.phone_number
+      });
     } else {
-      console.log('⚠️  Réponse Termii:', result.message);
+      console.log('⚠️  Réponse Termii:', result);
     }
 
   } catch (error: any) {
@@ -771,10 +791,10 @@ async getUserById(userId: string): Promise<IUser | null> {
     const resetCode = message.match(/(\d{6})/)?.[1] || '123456';
     console.log('🎯 Fallback démo - Code:', resetCode);
   }
-}
+} */
 
 // Méthode utilitaire: Envoyer un SMS via Twilio
-/* 
+ 
 private async sendSMS(phoneNumber: string, message: string): Promise<void> {
   try {
     console.log('🔍 =============== DÉBUT sendSMS ===============');
@@ -849,7 +869,7 @@ private async sendSMS(phoneNumber: string, message: string): Promise<void> {
     const resetCode = codeMatch ? codeMatch[1] : '123456';
     console.log(`🎯 Code pour test: ${resetCode}`);
   }
-} */
+} 
 
 
 // Méthode utilitaire: Formater le numéro pour Twilio
