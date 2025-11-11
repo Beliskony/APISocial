@@ -498,8 +498,8 @@ async getUserById(userId: string): Promise<IUser | null> {
    async initiatePasswordReset(phoneNumber: string, usernameOrFullName: string): Promise<void> {
     try {
       console.log("🎯 SERVICE - initiatePasswordReset début");
-    console.log("📞 Phone reçu:", phoneNumber);
-    console.log("👤 Username reçu:", usernameOrFullName);
+      console.log("📞 Phone reçu:", phoneNumber);
+      console.log("👤 Username reçu:", usernameOrFullName);
 
       // Normaliser le numéro de téléphone
       const normalizedPhone = this.normalizePhoneNumber(phoneNumber);

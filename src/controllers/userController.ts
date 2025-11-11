@@ -522,14 +522,15 @@ initiatePasswordReset = async (req: Request, res: Response): Promise<void> => {
   try {
     const { phoneNumber, usernameOrFullName } = req.body;
 
-    await this.userProvider.initiatePasswordReset({
+   const result = await this.userProvider.initiatePasswordReset({
       phoneNumber,
       usernameOrFullName
     });
 
     res.status(200).json({
       success: true,
-      message: "Code de réinitialisation envoyé par SMS"
+      message: "Code de réinitialisation envoyé par SMS",
+      data: result
     });
 
   } catch (error: any) {
