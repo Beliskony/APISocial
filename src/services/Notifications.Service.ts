@@ -39,7 +39,7 @@ export class NotificationsService {
       // Vérifier que l'expéditeur et le destinataire existent
       const [sender, recipient] = await Promise.all([
         UserModel.findById(data.sender),
-        UserModel.findById(data.recipient).select('preferences username')
+        UserModel.findById(data.recipient).select('preferences username devices')
       ]);
 
       if (!sender) {
@@ -121,6 +121,9 @@ export class NotificationsService {
     senderUsername: string
   ): Promise<void> {
     try {
+      console.log('🔔 [PUSH_DEBUG] Début envoi push pour:', recipient.username);
+      console.log('🔔 [PUSH_DEBUG] Devices du recipient:', recipient.devices);
+
       const preferences = recipient.preferences?.notifications;
       
       // Vérifier les préférences globales de push
@@ -155,6 +158,8 @@ export class NotificationsService {
         .filter((device: any) => device.expoPushToken && device.expoPushToken !== '')
         .map((device: any) => device.expoPushToken);
 
+        console.log('🔔 [PUSH_DEBUG] Tokens Expo trouvés:', pushTokens);
+
       if (pushTokens.length === 0) {
         console.log('📱 Aucun token push valide pour:', recipient.username);
         return;
@@ -173,6 +178,13 @@ export class NotificationsService {
         screen: 'Notifications',
         timestamp: new Date().toISOString()
       };
+
+      console.log('🔔 [PUSH_DEBUG] Envoi à Expo avec:', {
+      tokens: pushTokens,
+      title: pushTitle,
+      body: pushBody,
+      data: pushData
+      });
 
       // ✅ UTILISATION DE VOTRE SERVICE PUSH EXISTANT
       await this.pushService.sendToMultipleUsers(pushTokens, pushTitle, pushBody, pushData);

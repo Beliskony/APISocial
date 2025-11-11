@@ -36,7 +36,15 @@ export class PushNotificationService {
 
   async sendToMultipleUsers(tokens: string[], title: string, body: string, data?: any) {
     try {
+      console.log('🔔 [PUSH_DEBUG] Début envoi multiple');
+      console.log('🔔 [PUSH_DEBUG] Tokens reçus:', tokens);
+
       const validTokens = tokens.filter(token => Expo.isExpoPushToken(token));
+
+      console.log('🔔 [PUSH_DEBUG] Tokens valides:', validTokens);
+      console.log('🔔 [PUSH_DEBUG] Titre:', title);
+      console.log('🔔 [PUSH_DEBUG] Body:', body);
+      console.log('🔔 [PUSH_DEBUG] Data:', data);
       
       if (validTokens.length === 0) {
         console.log('Aucun token valide');
@@ -52,7 +60,8 @@ export class PushNotificationService {
       }));
 
       const tickets = await this.expo.sendPushNotificationsAsync(messages);
-      console.log(`✅ ${tickets.length} notifications envoyées`);
+      console.log(`✅ [PUSH_DEBUG] ${tickets.length} notifications envoyées`);
+      console.log('🔔 [PUSH_DEBUG] Tickets réponse:', tickets);
       
       return tickets;
     } catch (error) {

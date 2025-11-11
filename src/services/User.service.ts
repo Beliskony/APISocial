@@ -556,7 +556,7 @@ async getUserById(userId: string): Promise<IUser | null> {
         attempts: 0
       });
 
-      console.log('🎯 ====================================');
+    console.log('🎯 ====================================');
     console.log(`🎯 CODE GÉNÉRÉ: ${resetCode}`);
     console.log(`🎯 Pour: ${phoneNumber} (DB: ${user.contact.phoneNumber})`);
     console.log(`🎯 Utilisateur: ${user.username}`);
@@ -666,7 +666,7 @@ async getUserById(userId: string): Promise<IUser | null> {
   }
 
   //Méthode utilitaire: Générer un code numérique aléatoire
-  private generateRandomCode(length: number = 4): string {
+  private generateRandomCode(length: number = 6): string {
     const min = Math.pow(10, length - 1);
     const max = Math.pow(10, length) - 1;
     return Math.floor(min + Math.random() * (max - min + 1)).toString().padStart(length, '0');
@@ -872,27 +872,6 @@ private async sendSMS(phoneNumber: string, message: string): Promise<void> {
 } 
 
 
-// Méthode utilitaire: Formater le numéro pour Twilio
-private formatPhoneNumberForTwilio(phoneNumber: string): string {
-  let cleaned = phoneNumber.replace(/[^\d+]/g, '');
-  
-  console.log("🔧 Format InfoBip - Numéro avant:", phoneNumber, "Nettoyé:", cleaned);
-  
-  // Format Côte d'Ivoire pour InfoBip
-  if (cleaned.startsWith('0')) {
-    cleaned = '+225' + cleaned.substring(1);
-  } else if (cleaned.startsWith('225') && !cleaned.startsWith('+225')) {
-    cleaned = '+' + cleaned;
-  }
-  
-  // S'assurer que c'est un format international valide
-  if (!cleaned.startsWith('+')) {
-    cleaned = '+225' + cleaned; // Par défaut Côte d'Ivoire
-  }
-  
-  console.log("🔧 Format InfoBip - Numéro après:", cleaned);
-  return cleaned;
-}
 
   //Méthode utilitaire: Nettoyer les codes expirés
   private cleanupExpiredCodes(): void {
