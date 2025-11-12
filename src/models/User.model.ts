@@ -171,6 +171,12 @@ const UserSchema: Schema = new Schema(
       lockUntil: { type: Date },
       twoFactorEnabled: { type: Boolean, default: false }
     },
+    devices:[{
+      expoPushToken: { type: String, required: true, unique: true },
+      deviceId: { type: String, required: true },
+      platform: { type: String, enum: ['ios', 'android', 'web'], required: true },
+      lastActive: { type: Date, default: Date.now }
+    }],
     preferences: {
       privacy: {
         profile: { 
