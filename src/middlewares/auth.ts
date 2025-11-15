@@ -12,7 +12,7 @@ import {
 const JWT_SECRET = process.env.JWT_SECRET || 'monSupercodeSecretAxel123456@';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
 
-// 🔐 Middleware pour vérifier le token JWT
+//Middleware pour vérifier le token JWT
 export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunction): void => {
   try {
     const token = extractTokenFromRequest(req);
@@ -37,7 +37,7 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
 
     req.user = validationResult.user;
     
-    console.log("✅ Utilisateur authentifié:", {
+    console.log("Utilisateur authentifié:", {
       id: req.user._id,
       username: req.user.username,
       email: req.user.email
@@ -45,7 +45,7 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
     
     next();
   } catch (error: any) {
-    console.error('❌ Erreur d\'authentification JWT:', error.message);
+    console.error('Erreur d\'authentification JWT:', error.message);
     res.status(500).json({ 
       success: false,
       message: 'Erreur interne d\'authentification' 
@@ -53,7 +53,7 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
   }
 };
 
-// 📝 Middleware pour valider l'inscription
+//Middleware pour valider l'inscription
 export const registerUser = (schema: ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {

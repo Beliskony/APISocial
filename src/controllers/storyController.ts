@@ -52,8 +52,8 @@ export class StoryController {
       const { storyId } = req.params;
       const userId = req.user?._id;
 
-        console.log('🎯 Contrôleur - viewStoryAndGetCount');
-        console.log('📝 Données reçues:', { storyId, userId });
+        console.log('Contrôleur - viewStoryAndGetCount');
+        console.log('Données reçues:', { storyId, userId });
         if (!userId) {
             res.status(401).json({ message: "Utilisateur non authentifié" });
             return;

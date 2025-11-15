@@ -68,7 +68,7 @@ export class UserController {
         }
     }
 
-    // 🔐 Connexion d'un utilisateur
+    //Connexion d'un utilisateur
     async loginUser(req: Request, res: Response): Promise<void> {
         try {
             const { identifiant, password } = req.body;

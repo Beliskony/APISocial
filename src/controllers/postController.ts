@@ -16,7 +16,7 @@ export class PostController {
         @inject(TYPES.UserProvider)private userProvider: UserProvider    
     ) {}
 
-    // ✅ Création de post avec médias
+    // Création de post avec médias
     async createPost(req: AuthRequest, res: Response): Promise<void> {
     const userId = req.user?._id;
     if (!userId) {
@@ -27,7 +27,7 @@ export class PostController {
         return;
     }
 
-    // ✅ UTILISER LA NOUVELLE STRUCTURE du schéma Zod
+    // UTILISER LA NOUVELLE STRUCTURE du schéma Zod
     const { content, visibility, metadata, type, sharedPost } = req.body;
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
@@ -59,10 +59,10 @@ export class PostController {
             }
         }
 
-        // ✅ APPEL CORRECT avec tous les paramètres
+        //APPEL CORRECT avec tous les paramètres
         const post = await this.postProvider.createPost(
             userId, 
-            content?.text,  // ✅ text vient maintenant de content.text
+            content?.text,  //text vient maintenant de content.text
             media,
             visibility,
             metadata,
