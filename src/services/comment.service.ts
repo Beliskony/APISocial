@@ -407,10 +407,10 @@ async deleteComment(commentId: string, userId: string): Promise<boolean> {
       await comment.save();
 
       // Notification à l'auteur du commentaire
-      if (comment.author.toString() !== userId) {
+      if (comment.author._id.toString() !== userId) {
         await this.notificationsService.createNotification({
           sender: userId,
-          recipient: comment.author.toString(),
+          recipient: comment.author._id.toString(),
           type: 'like',
           content: `a aimé votre commentaire`,
           post: comment.post.toString()
@@ -462,8 +462,8 @@ async deleteComment(commentId: string, userId: string): Promise<boolean> {
     for (const mentionedUserId of comment.metadata.mentions) {
       if (mentionedUserId.toString() !== comment.author.toString()) {
         await this.notificationsService.createNotification({
-          sender: comment.author.toString(),
-          recipient: mentionedUserId.toString(),
+          sender: comment.author._id.toString(),
+          recipient: mentionedUserId._id.toString(),
           type: 'mention',
           content: `vous a mentionné dans un commentaire`,
           post: comment.post.toString()
@@ -479,8 +479,8 @@ private async notifyPostOwner(comment: IComment): Promise<void> {
     if (!post || post.author.toString() === comment.author.toString()) return;
 
     await this.notificationsService.createNotification({
-      sender: comment.author.toString(),
-      recipient: post.author.toString(),
+      sender: comment.author._id.toString(),
+      recipient: post.author._id.toString(),
       type: 'comment',
       content:`a commenté votre publication: "${comment.content.text.substring(0, 50)}..."`,
       post: comment.post.toString()
@@ -503,8 +503,8 @@ private async notifyParentCommentAuthor(comment: IComment): Promise<void> {
     if (!parentComment || parentComment.author.toString() === comment.author.toString()) return;
 
     await this.notificationsService.createNotification({
-      sender: comment.author.toString(),
-      recipient: parentComment.author.toString(),
+      sender: comment.author._id.toString(),
+      recipient: parentComment.author._id.toString(),
       type: 'comment', 
       content: `a répondu à votre commentaire`,
       post: comment.post.toString()
