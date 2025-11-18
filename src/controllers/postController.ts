@@ -433,35 +433,34 @@ async updatePost(req: AuthRequest, res: Response): Promise<void> {
     }
 
     // 🔄 Partager un post
-    async sharePost(req: AuthRequest, res: Response): Promise<void> {
-        try {
-            const userId = req.user?._id;
-            const { postId } = req.params;
-            const { text } = req.body;
+    async sharePostLink(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const userId = req.user?._id;
+        const { postId } = req.params;
 
-            if (!userId) {
-                res.status(401).json({ 
-                    success: false,
-                    message: 'Non autorisé' 
-                });
-                return;
-            }
-
-            const sharedPost = await this.postProvider.sharePost(postId, userId, text);
-            
-            res.status(201).json({
-                success: true,
-                message: "Post partagé avec succès",
-                data: sharedPost
-            });
-        } catch (error) {
-            res.status(500).json({ 
+        if (!userId) {
+            res.status(401).json({ 
                 success: false,
-                message: 'Erreur lors du partage du post', 
-                error: error instanceof Error ? error.message : error 
+                message: 'Non autorisé' 
             });
+            return;
         }
+
+        const result = await this.postProvider.sharePostLink(postId, userId);
+        
+        res.status(200).json({
+            success: true,
+            message: "Partage enregistré avec succès",
+            data: result // { sharesCount: number }
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            success: false,
+            message: 'Erreur lors de l\'enregistrement du partage', 
+            error: error instanceof Error ? error.message : error 
+        });
     }
+}
 
     // 🎯 Posts populaires
     async getPopularPosts(req: Request, res: Response): Promise<void> {

@@ -241,37 +241,39 @@ export class PostService {
   }
 
   // ✅ Partager un post - CORRIGÉ
-  async sharePost(originalPostId: string, userId: string, text?: string): Promise<IPost> {
-    const originalPost = await PostModel.findById(originalPostId);
-    if (!originalPost) throw new Error("Post original non trouvé");
+ // ✅ Partager un post (pour les liens) - SIMPLE COMPTEUR
+async sharePostLink(postId: string, userId: string): Promise<{ sharesCount: number }> {
+  const post = await PostModel.findById(postId);
+  if (!post) throw new Error("Post non trouvé");
 
-    const sharePostData: CreatePostData = {
-      author: new Types.ObjectId(userId),
-      content: { text },
-      type: 'share',
-      sharedPost: originalPost._id
-    };
+  const userObjectId = new Types.ObjectId(userId);
+  
+  // Vérifier si l'utilisateur a déjà partagé
+  const hasShared = post.engagement.shares.some(shareId => 
+    shareId.equals(userObjectId)
+  );
 
-    const sharedPost = await this.createPost(sharePostData);
+  if (!hasShared) {
+    // Ajouter l'utilisateur aux shares
+    post.engagement.shares.push(userObjectId);
+    await post.save();
 
-    // Mettre à jour le compteur de partages du post original
-    originalPost.engagement.shares.push(new Types.ObjectId(userId));
-    await originalPost.save();
-
-    // Notification au propriétaire du post original
-    if (originalPost.author.toString() !== userId) {
-      await this.notificationsService.createNotification({
-        sender: userId,
-        recipient: originalPost.author.toString(),
-        type: 'new_post',
-        content: `a partagé votre publication`,
-        post: originalPostId
-    });
-    }
-
-    return sharedPost;
+    // Notification au propriétaire du post
+    //if (post.author.toString() !== userId) {
+      //await this.notificationsService.createNotification({
+        //sender: userId,
+        //recipient: post.author.toString(),
+        //type: 'share',
+        //content: `a partagé votre publication`,
+        //post: postId
+      //});
+    //}
   }
 
+  return { 
+    sharesCount: post.engagement.sharesCount 
+  };
+}
   // ✅ Posts populaires - CORRIGÉ (méthode alternative)
   async getPopularPosts(limit: number = 10): Promise<IPost[]> {
     return await PostModel.find({

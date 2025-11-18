@@ -130,8 +130,7 @@ export class PostRouter {
         this.router.post(
             "/:postId/share", 
             authenticateJWT,
-            validateRequest(SharePostSchema),
-            this.postController.sharePost.bind(this.postController)
+            this.postController.sharePostLink.bind(this.postController)
         );
 
 

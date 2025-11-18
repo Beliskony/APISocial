@@ -100,9 +100,9 @@ export class PostProvider {
     }
 
     // 🔄 Partager un post
-    async sharePost(originalPostId: string, userId: string, text?: string): Promise<IPost> {
-        return this.postService.sharePost(originalPostId, userId, text);
-    }
+     async sharePostLink(postId: string, userId: string): Promise<{ sharesCount: number }> {
+    return this.postService.sharePostLink(postId, userId);
+  }
 
     // 🎯 Posts populaires
     async getPopularPosts(limit: number = 10): Promise<IPost[]> {
