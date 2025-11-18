@@ -29,9 +29,19 @@ export class UserController {
 }
 
     private sanitizeUser(user: IUser): any {
+        try {
+        // ✅ CORRECTION : Vérifier si c'est un document Mongoose
         const userObject = user.toObject ? user.toObject() : user;
+        
+        // ✅ Supprimer les champs sensibles
         const { password, security, ...sanitizedUser } = userObject;
         return sanitizedUser;
+    } catch (error) {
+        console.error("❌ Error in sanitizeUser:", error);
+        // Fallback: retourner l'user sans les champs sensibles
+        const { password, security, ...fallbackUser } = user as any;
+        return fallbackUser;
+    }
     }
 
     // 🆕 Créer un nouvel utilisateur
@@ -40,8 +50,8 @@ export class UserController {
         try {
             console.log("📥 Controller createUser called with body:", req.body);
             console.log('=== HEADERS ===', req.headers);
-  console.log('=== BODY ===', req.body);
-  console.log('=== METHOD ===', req.method);
+            console.log('=== BODY ===', req.body);
+            console.log('=== METHOD ===', req.method);
             
             const user = req.body;
             const newUser = await this.userProvider.createUser(user);
@@ -61,6 +71,17 @@ export class UserController {
                 
         } catch (error: any) {
             console.error("❌ Error in createUser:", error);
+             // ✅ AMÉLIORATION : Meilleure gestion des statuts HTTP
+        let statusCode = 400;
+        let errorMessage = error.message;
+
+        if (error.message.includes('E11000 duplicate key')) {
+            statusCode = 409; // Conflict
+            errorMessage = "Un utilisateur avec cet email, téléphone ou nom d'utilisateur existe déjà";
+        } else if (error.message.includes('validation failed')) {
+            statusCode = 422; // Unprocessable Entity
+        }
+        
             res.status(400).json({ 
                 success: false,
                 message: error.message 
