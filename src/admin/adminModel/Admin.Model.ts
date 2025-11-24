@@ -6,7 +6,7 @@ export interface IAdmin extends Document {
   email: string;
   profilePicture?: string;
   password: string;
-  role: 'admin' | 'super_admin';
+  role: 'admin' | 'moderator';
   permissions: {
     canManageUsers: boolean;
     canManageContent: boolean;
@@ -50,7 +50,7 @@ const AdminSchema: Schema = new Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'super_admin'],
+      enum: ['admin', 'moderator'],
       default: 'admin'
     },
     permissions: {

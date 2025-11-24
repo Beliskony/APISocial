@@ -1,5 +1,5 @@
 import { injectable, inject } from "inversify";
-import { AdminService, AdminStats, UserManagementData } from "../adminService/Admin.Service";
+import { AdminService, AdminStats, AuditLogData, EngagementMetrics, GrowthMetrics, ReportData, UserManagementData } from "../adminService/Admin.Service";
 import { IAdmin } from "../adminModel/Admin.Model";
 import { TYPES } from "../../config/TYPES";
 
@@ -76,5 +76,79 @@ export class AdminProvider {
 
     async deleteCommentaire(commentId: string): Promise<void> {
         return this.adminService.deleteUnCommentaire(commentId);
+    }
+
+    // ==================== 📊 ANALYTIQUES AVANCÉES ====================
+
+    async getAdvancedAnalytics(dateRange?: { start: Date; end: Date }): Promise<{
+        engagement: EngagementMetrics;
+        growth: GrowthMetrics;
+        topPerformers: any;
+    }> {
+        return this.adminService.getAdvancedAnalytics(dateRange);
+    }
+
+
+       // ==================== 🚨 GESTION DES SIGNALEMENTS ====================
+
+    async reportContent(reportData: ReportData): Promise<void> {
+        return this.adminService.reportContent(reportData);
+    }
+
+    async getPendingReports(page: number = 1, limit: number = 20): Promise<{
+        reports: any[];
+        total: number;
+        page: number;
+        totalPages: number;
+    }> {
+        return this.adminService.getPendingReports(page, limit);
+    }
+
+    async handleReport(
+        reportId: string, 
+        action: 'approve' | 'reject' | 'ban', 
+        adminId: string,
+        moderatorNotes?: string
+    ): Promise<void> {
+        return this.adminService.handleReport(reportId, action, adminId, moderatorNotes);
+    }
+
+    async getReportStats(): Promise<{
+        pending: number;
+        resolved: number;
+        rejected: number;
+        total: number;
+    }> {
+        return this.adminService.getReportStats();
+    }
+
+
+       // ==================== 📝 AUDIT ET LOGS ====================
+
+    async logAuditAction(auditData: AuditLogData): Promise<void> {
+        return this.adminService.logAuditAction(auditData);
+    }
+
+    async getAuditLogs(filters: {
+        adminId?: string;
+        action?: string;
+        dateFrom?: Date;
+        dateTo?: Date;
+        targetType?: string;
+    }, page: number = 1, limit: number = 50): Promise<{
+        logs: any[];
+        total: number;
+        page: number;
+        totalPages: number;
+    }> {
+        return this.adminService.getAuditLogs(filters, page, limit);
+    }
+
+    async getAuditStats(): Promise<{
+        totalActions: number;
+        actionsToday: number;
+        topAdmins: any[];
+    }> {
+        return this.adminService.getAuditStats();
     }
 }

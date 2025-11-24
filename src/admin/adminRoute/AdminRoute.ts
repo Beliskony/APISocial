@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { AdminController } from "../adminController/Admin.Controller";
-import { verifyAdmin } from "../adminMiddleware/Admin.Middleware";
+import { adminAuthMiddleware, requirePermission } from "../adminMiddleware/Admin.Middleware";
 import { inject, injectable } from "inversify";
 import { TYPES } from "../../config/TYPES";
 
@@ -16,7 +16,7 @@ export class AdminRouter {
     }
 
     private initializeRoutes(): void {
-        // 🔐 AUTHENTIFICATION (publique)
+         // 🔐 AUTHENTIFICATION (publique)
         this.router.post(
             "/auth/register",
             this.adminController.createAdmin.bind(this.adminController)
@@ -24,78 +24,144 @@ export class AdminRouter {
 
         this.router.post(
             "/auth/login", 
-            this.adminController.login.bind(this.adminController) // ✅ login() pas adminLogin()
+            this.adminController.login.bind(this.adminController)
         );
 
         // 🔒 PROFIL ADMIN (protégé)
         this.router.get(
             "/profile",
-            verifyAdmin,
-            this.adminController.getProfile.bind(this.adminController) // ✅ getProfile() pas getAdminProfile()
+            adminAuthMiddleware,
+            this.adminController.getProfile.bind(this.adminController)
         );
 
-        // 📊 TABLEAU DE BORD (protégé)
+        // 📊 TABLEAU DE BORD & ANALYTICS (protégé)
         this.router.get(
             "/dashboard/stats",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canViewAnalytics'),
             this.adminController.getDashboardStats.bind(this.adminController)
+        );
+
+        this.router.get(
+            "/analytics/advanced",
+            adminAuthMiddleware,
+            requirePermission('canViewAnalytics'),
+            this.adminController.getAdvancedAnalytics.bind(this.adminController)
+        );
+
+        // 🚨 REPORTING & SIGNALEMENTS (protégé)
+        this.router.post(
+            "/reports",
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
+            this.adminController.reportContent.bind(this.adminController)
+        );
+
+        this.router.get(
+            "/reports/pending",
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
+            this.adminController.getPendingReports.bind(this.adminController)
+        );
+
+        this.router.post(
+            "/reports/:reportId/handle",
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
+            this.adminController.handleReport.bind(this.adminController)
+        );
+
+        this.router.get(
+            "/reports/stats",
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
+            this.adminController.getReportStats.bind(this.adminController)
+        );
+
+        // 📝 AUDIT & LOGS (protégé)
+        this.router.post(
+            "/audit/log",
+            adminAuthMiddleware,
+            this.adminController.logAuditAction.bind(this.adminController)
+        );
+
+        this.router.get(
+            "/audit/logs",
+            adminAuthMiddleware,
+            requirePermission('canViewAnalytics'),
+            this.adminController.getAuditLogs.bind(this.adminController)
+        );
+
+        this.router.get(
+            "/audit/stats",
+            adminAuthMiddleware,
+            requirePermission('canViewAnalytics'),
+            this.adminController.getAuditStats.bind(this.adminController)
         );
 
         // 👥 GESTION UTILISATEURS (protégé)
         this.router.get(
             "/users",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageUsers'),
             this.adminController.getAllUsers.bind(this.adminController)
         );
 
         this.router.get(
             "/users/search",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageUsers'),
             this.adminController.searchUsers.bind(this.adminController)
         );
 
         this.router.post(
             "/users/manage",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageUsers'),
             this.adminController.manageUser.bind(this.adminController)
         );
 
         this.router.delete(
             "/users/:userId",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageUsers'),
             this.adminController.deleteUser.bind(this.adminController)
         );
 
         // 📝 GESTION CONTENUS (protégé)
         this.router.get(
             "/posts",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
             this.adminController.getAllPosts.bind(this.adminController)
         );
 
         this.router.post(
             "/content/moderate",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
             this.adminController.moderateContent.bind(this.adminController)
         );
 
         this.router.delete(
             "/posts/:postId",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
             this.adminController.deletePost.bind(this.adminController)
         );
 
         this.router.delete(
             "/comments/:commentId",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
             this.adminController.deleteComment.bind(this.adminController)
         );
 
         // 🔄 ROUTES EXISTANTES MIGRÉES (pour compatibilité)
         this.router.get(
             "/getAdmin",
-            verifyAdmin,
-            this.adminController.getProfile.bind(this.adminController) // ✅ getProfile()
+            adminAuthMiddleware,
+            this.adminController.getProfile.bind(this.adminController)
         );
 
         this.router.post(
@@ -105,26 +171,36 @@ export class AdminRouter {
 
         this.router.post(
             "/login",
-            this.adminController.login.bind(this.adminController) // ✅ login()
+            this.adminController.login.bind(this.adminController)
         );
 
         // 🔄 Routes de suppression avec anciens paramètres
         this.router.delete(
             "/user/:id",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageUsers'),
             this.adminController.deleteUser.bind(this.adminController)
         );
 
         this.router.delete(
             "/post/:id", 
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
             this.adminController.deletePost.bind(this.adminController)
         );
 
         this.router.delete(
             "/comment/:id",
-            verifyAdmin,
+            adminAuthMiddleware,
+            requirePermission('canManageContent'),
             this.adminController.deleteComment.bind(this.adminController)
+        );
+
+        // 🔄 Route profil admin par ID (super admin)
+        this.router.get(
+            "/admin/:id",
+            adminAuthMiddleware,
+            this.adminController.getAdminProfileById.bind(this.adminController)
         );
     }
 }

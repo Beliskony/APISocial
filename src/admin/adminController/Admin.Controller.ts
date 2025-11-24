@@ -124,6 +124,36 @@ export class AdminController {
     }
   }
 
+   async getAdvancedAnalytics(req: Request, res: Response): Promise<void> {
+    try {
+      const { start, end } = req.query;
+      const dateRange = start && end ? {
+        start: new Date(start as string),
+        end: new Date(end as string)
+      } : undefined;
+
+      const analytics = await this.adminProvider.getAdvancedAnalytics(dateRange);
+      res.status(200).json(analytics);
+    } catch (error: any) {
+      console.error("Erreur analytics avancées:", error);
+      res.status(500).json({ 
+        message: error.message || "Erreur lors de la récupération des analytics" 
+      });
+    }
+  }
+
+  async getReportStats(req: Request, res: Response): Promise<void> {
+    try {
+      const stats = await this.adminProvider.getReportStats();
+      res.status(200).json(stats);
+    } catch (error: any) {
+      console.error("Erreur stats signalements:", error);
+      res.status(500).json({ 
+        message: error.message || "Erreur lors de la récupération des stats" 
+      });
+    }
+  }
+
   /**
    * ✅ Tableau de bord avec statistiques
    */
@@ -135,6 +165,143 @@ export class AdminController {
       console.error("Erreur récupération stats dashboard:", error);
       res.status(500).json({ 
         message: "Erreur lors de la récupération des statistiques" 
+      });
+    }
+  }
+
+   /**
+   * ✅ Obtenir les signalements en attente
+   */
+  async getPendingReports(req: Request, res: Response): Promise<void> {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      const result = await this.adminProvider.getPendingReports(page, limit);
+      res.status(200).json(result);
+    } catch (error: any) {
+      console.error("Erreur récupération signalements:", error);
+      res.status(500).json({ 
+        message: error.message || "Erreur lors de la récupération des signalements" 
+      });
+    }
+  }
+
+  /**
+   * ✅ Signaler du contenu
+   */
+  async reportContent(req: Request, res: Response): Promise<void> {
+    try {
+      const reportData = req.body;
+      await this.adminProvider.reportContent(reportData);
+      res.status(201).json({ message: "Contenu signalé avec succès" });
+    } catch (error: any) {
+      console.error("Erreur signalement:", error);
+      res.status(500).json({ 
+        message: error.message || "Erreur lors du signalement" 
+      });
+    }
+  }
+
+    /**
+   * ✅ Traiter un signalement
+   */
+  async handleReport(req: AdminAuthRequest, res: Response): Promise<void> {
+    try {
+      const { reportId, action, moderatorNotes } = req.body;
+      const adminId = req.admin?._id.toString();
+
+      if (!adminId) {
+        res.status(401).json({ message: "Admin non authentifié" });
+        return;
+      }
+
+      await this.adminProvider.handleReport(reportId, action, adminId, moderatorNotes);
+      res.status(200).json({ message: "Signalement traité avec succès" });
+    } catch (error: any) {
+      console.error("Erreur traitement signalement:", error);
+      res.status(500).json({ 
+        message: error.message || "Erreur lors du traitement du signalement" 
+      });
+    }
+  }
+
+  /**
+   * ✅ Loguer une action d'audit
+   */
+  async logAuditAction(req: AdminAuthRequest, res: Response): Promise<void> {
+    try {
+      const auditData = req.body;
+      const adminId = req.admin?._id.toString();
+
+      if (!adminId) {
+        res.status(401).json({ message: "Admin non authentifié" });
+        return;
+      }
+
+      await this.adminProvider.logAuditAction({
+        ...auditData,
+        adminId,
+        ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1'
+      });
+      res.status(201).json({ message: "Action d'audit loguée avec succès" });
+    } catch (error: any) {
+      console.error("Erreur log audit:", error);
+      res.status(500).json({ 
+        message: error.message || "Erreur lors du log de l'action" 
+      });
+    }
+  }
+
+
+   /**
+   * ✅ Obtenir les logs d'audit
+   */
+  async getAuditLogs(req: Request, res: Response): Promise<void> {
+    try {
+      const {
+        adminId,
+        action,
+        dateFrom,
+        dateTo,
+        targetType,
+        page = 1,
+        limit = 50
+      } = req.query;
+
+      const filters = {
+        adminId: adminId as string,
+        action: action as string,
+        dateFrom: dateFrom ? new Date(dateFrom as string) : undefined,
+        dateTo: dateTo ? new Date(dateTo as string) : undefined,
+        targetType: targetType as string
+      };
+
+      const result = await this.adminProvider.getAuditLogs(
+        filters, 
+        parseInt(page as string), 
+        parseInt(limit as string)
+      );
+      res.status(200).json(result);
+    } catch (error: any) {
+      console.error("Erreur logs audit:", error);
+      res.status(500).json({ 
+        message: error.message || "Erreur lors de la récupération des logs" 
+      });
+    }
+  }
+  
+  /**
+   * ✅ Statistiques d'audit
+   */
+  async getAuditStats(req: Request, res: Response): Promise<void> {
+    try {
+      const stats = await this.adminProvider.getAuditStats();
+      res.status(200).json(stats);
+    } catch (error: any) {
+      console.error("Erreur stats audit:", error);
+      res.status(500).json({ 
+        message: error.message || "Erreur lors de la récupération des stats audit" 
       });
     }
   }

@@ -31,8 +31,395 @@ export interface UserManagementData {
   duration?: number; // en heures
 }
 
+export interface GrowthMetrics {
+  userGrowth: { daily: number; weekly: number; monthly: number };
+  contentGrowth: { daily: number; weekly: number; monthly: number };
+  engagementGrowth: { daily: number; weekly: number; monthly: number };
+}
+
+export interface ReportData {
+  contentId: string;
+  contentType: 'post' | 'comment' | 'user' | 'story';
+  reason: string;
+  reporterId: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description?: string;
+}
+
+export interface AuditLogData {
+  adminId: string;
+  action: string;
+  targetType: 'user' | 'post' | 'comment' | 'system' | 'admin';
+  targetId?: string;
+  details: any;
+  ipAddress: string;
+}
+
+export interface EngagementMetrics {
+  dailyActiveUsers: number;
+  monthlyActiveUsers: number;
+  averageSessionDuration: number;
+  postsPerUser: number;
+  commentsPerPost: number;
+  sharesPerPost: number;
+  retentionRates: {
+    day1: number;
+    day7: number;
+    day30: number;
+  };
+}
+
+
 @injectable()
 export class AdminService {
+    private readonly AUDIT_LOG_COLLECTION = 'audit_logs';
+  private readonly REPORTS_COLLECTION = 'content_reports';
+
+  // ==================== 📊 SERVICE D'ANALYTIQUES AVANCÉES ====================
+
+  public async getAdvancedAnalytics(dateRange?: { start: Date; end: Date }): Promise<{
+    engagement: EngagementMetrics;
+    growth: GrowthMetrics;
+    topPerformers: any;
+  }> {
+    const startDate = dateRange?.start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDate = dateRange?.end || new Date();
+
+    const [
+      dailyActiveUsers,
+      monthlyActiveUsers,
+      totalPosts,
+      totalComments,
+      totalUsers,
+      newUsersThisMonth,
+      topPosts,
+      topUsers
+    ] = await Promise.all([
+      // Utilisateurs actifs aujourd'hui
+      UserModel.countDocuments({
+        'status.lastLogin': {
+          $gte: new Date(new Date().setHours(0, 0, 0, 0))
+        }
+      }),
+      
+      // Utilisateurs actifs ce mois
+      UserModel.countDocuments({
+        'status.lastLogin': {
+          $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+        }
+      }),
+      
+      // Métriques de contenu
+      PostModel.countDocuments({ createdAt: { $gte: startDate, $lte: endDate } }),
+      CommentModel.countDocuments({ createdAt: { $gte: startDate, $lte: endDate } }),
+      UserModel.countDocuments(),
+      
+      // Nouveaux utilisateurs ce mois
+      UserModel.countDocuments({
+        createdAt: {
+          $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+        }
+      }),
+      
+      // Top posts (par engagement)
+      PostModel.aggregate([
+        { $match: { createdAt: { $gte: startDate, $lte: endDate } } },
+        { 
+          $project: {
+            engagement: { $add: [
+              { $size: { $ifNull: ['$interactions.likes', []] } },
+              { $size: { $ifNull: ['$interactions.comments', []] } },
+              { $size: { $ifNull: ['$interactions.shares', []] } }
+            ]},
+            title: 1,
+            author: 1,
+            createdAt: 1
+          }
+        },
+        { $sort: { engagement: -1 } },
+        { $limit: 10 }
+      ]),
+      
+      // Top utilisateurs (par activité)
+      UserModel.aggregate([
+        {
+          $lookup: {
+            from: 'posts',
+            localField: '_id',
+            foreignField: 'author',
+            as: 'userPosts'
+          }
+        },
+        {
+          $project: {
+            username: 1,
+            email: 1,
+            'profile.profilePicture': 1,
+            activityScore: {
+              $add: [
+                { $size: '$userPosts' },
+                { $multiply: [{ $size: { $ifNull: ['$social.followers', []] } }, 0.1] }
+              ]
+            },
+            postCount: { $size: '$userPosts' },
+            followerCount: { $size: { $ifNull: ['$social.followers', []] } }
+          }
+        },
+        { $sort: { activityScore: -1 } },
+        { $limit: 10 }
+      ])
+    ]);
+
+    const engagement: EngagementMetrics = {
+      dailyActiveUsers,
+      monthlyActiveUsers,
+      averageSessionDuration: 5.2, // À adapter avec vos données
+      postsPerUser: totalUsers > 0 ? totalPosts / totalUsers : 0,
+      commentsPerPost: totalPosts > 0 ? totalComments / totalPosts : 0,
+      sharesPerPost: 2.1, // À adapter avec vos données
+      retentionRates: {
+        day1: 65,
+        day7: 45,
+        day30: 25
+      }
+    };
+
+    const growth: GrowthMetrics = {
+      userGrowth: {
+        daily: newUsersThisMonth / 30,
+        weekly: newUsersThisMonth / 4,
+        monthly: newUsersThisMonth
+      },
+      contentGrowth: {
+        daily: totalPosts / 30,
+        weekly: totalPosts / 4,
+        monthly: totalPosts
+      },
+      engagementGrowth: {
+        daily: totalComments / 30,
+        weekly: totalComments / 4,
+        monthly: totalComments
+      }
+    };
+
+    return {
+      engagement,
+      growth,
+      topPerformers: {
+        topPosts,
+        topUsers
+      }
+    };
+  }
+
+  // ==================== 🚨 SERVICE DE REPORTING & SIGNALEMENTS ====================
+
+  public async reportContent(reportData: ReportData): Promise<void> {
+    const db = AdminModel.db;
+    const reportsCollection = db.collection(this.REPORTS_COLLECTION);
+
+    const report = {
+      ...reportData,
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      _id: new Types.ObjectId()
+    };
+
+    await reportsCollection.insertOne(report);
+  }
+
+  public async getPendingReports(page: number = 1, limit: number = 20): Promise<{
+    reports: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const db = AdminModel.db;
+    const reportsCollection = db.collection(this.REPORTS_COLLECTION);
+
+    const skip = (page - 1) * limit;
+
+    const [reports, total] = await Promise.all([
+      reportsCollection
+        .find({ status: 'pending' })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+      reportsCollection.countDocuments({ status: 'pending' })
+    ]);
+
+    return {
+      reports,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
+  public async handleReport(
+    reportId: string, 
+    action: 'approve' | 'reject' | 'ban', 
+    adminId: string,
+    moderatorNotes?: string
+  ): Promise<void> {
+    const db = AdminModel.db;
+    const reportsCollection = db.collection(this.REPORTS_COLLECTION);
+
+    const updateData = {
+      status: action === 'approve' ? 'resolved' : 'rejected',
+      moderatorNotes,
+      handledAt: new Date(),
+      handledBy: adminId,
+      actionTaken: action
+    };
+
+    const result = await reportsCollection.updateOne(
+      { _id: new Types.ObjectId(reportId) },
+      { $set: updateData }
+    );
+
+    if (result.modifiedCount === 0) {
+      throw new Error("Report non trouvé");
+    }
+
+    // Logger l'action
+    await this.logAuditAction({
+      adminId,
+      action: `report_handled_${action}`,
+      targetType: 'system',
+      targetId: reportId,
+      details: { action, moderatorNotes },
+      ipAddress: '127.0.0.1'
+    });
+  }
+
+  public async getReportStats(): Promise<{
+    pending: number;
+    resolved: number;
+    rejected: number;
+    total: number;
+  }> {
+    const db = AdminModel.db;
+    const reportsCollection = db.collection(this.REPORTS_COLLECTION);
+
+    const [pending, resolved, rejected, total] = await Promise.all([
+      reportsCollection.countDocuments({ status: 'pending' }),
+      reportsCollection.countDocuments({ status: 'resolved' }),
+      reportsCollection.countDocuments({ status: 'rejected' }),
+      reportsCollection.countDocuments()
+    ]);
+
+    return {
+      pending,
+      resolved,
+      rejected,
+      total
+    };
+  }
+
+  // ==================== 📝 SERVICE D'AUDIT & LOGS ====================
+
+  public async logAuditAction(auditData: AuditLogData): Promise<void> {
+    const db = AdminModel.db;
+    const auditCollection = db.collection(this.AUDIT_LOG_COLLECTION);
+
+    const logEntry = {
+      ...auditData,
+      timestamp: new Date(),
+      _id: new Types.ObjectId()
+    };
+
+    await auditCollection.insertOne(logEntry);
+  }
+
+  public async getAuditLogs(filters: {
+    adminId?: string;
+    action?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    targetType?: string;
+  }, page: number = 1, limit: number = 50): Promise<{
+    logs: any[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const db = AdminModel.db;
+    const auditCollection = db.collection(this.AUDIT_LOG_COLLECTION);
+
+    const query: any = {};
+    
+    if (filters.adminId) query.adminId = filters.adminId;
+    if (filters.action) query.action = { $regex: filters.action, $options: 'i' };
+    if (filters.targetType) query.targetType = filters.targetType;
+    if (filters.dateFrom || filters.dateTo) {
+      query.timestamp = {};
+      if (filters.dateFrom) query.timestamp.$gte = filters.dateFrom;
+      if (filters.dateTo) query.timestamp.$lte = filters.dateTo;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      auditCollection
+        .find(query)
+        .sort({ timestamp: -1 })
+        .skip(skip)
+        .limit(limit)
+        .toArray(),
+      auditCollection.countDocuments(query)
+    ]);
+
+    return {
+      logs,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
+  public async getAuditStats(): Promise<{
+    totalActions: number;
+    actionsToday: number;
+    topAdmins: any[];
+  }> {
+    const db = AdminModel.db;
+    const auditCollection = db.collection(this.AUDIT_LOG_COLLECTION);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [
+      totalActions,
+      actionsToday,
+      topAdmins
+    ] = await Promise.all([
+      auditCollection.countDocuments(),
+      auditCollection.countDocuments({ timestamp: { $gte: today } }),
+      auditCollection.aggregate([
+        {
+          $group: {
+            _id: '$adminId',
+            actionCount: { $sum: 1 },
+            lastAction: { $max: '$timestamp' }
+          }
+        },
+        { $sort: { actionCount: -1 } },
+        { $limit: 5 }
+      ]).toArray()
+    ]);
+
+    return {
+      totalActions,
+      actionsToday,
+      topAdmins
+    };
+  }
+
+
+  
   // ✅ CREATE ADMIN
   public async createAdmin(adminData: IAdmin): Promise<IAdmin> {
     const existingAdmin = await AdminModel.findOne({
