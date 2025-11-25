@@ -11,13 +11,8 @@ import { container } from "./config/container";
 import { TYPES } from "./config/TYPES";
 import bodyParser from "body-parser";
 import { MediaRouter } from "./routes/media.router";
-//import cors from "cors";
+import cors from "cors";
 
-//const corsOptions: CorsOptions = {
-  //origin: ['http://localhost:8082/', 'http://localhost:19006',
-    //'http://192.168.1.24:19006', ],
-  //methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  //allowedHeaders: ['Content-Type', 'Authorization'],};
 
 
 dotenv.config();
@@ -25,7 +20,11 @@ dotenv.config();
 const app = express();
 
 // Configuration CORS
-//app.use(cors(corsOptions));
+app.use(cors({
+  origin: ["http://localhost:5173", "https://ton-domaine.com"],
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true
+}));
 
 // Middleware
 app.use(express.json());
