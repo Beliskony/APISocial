@@ -2,6 +2,7 @@ import { injectable, inject } from "inversify";
 import { AdminService, AdminStats, AuditLogData, EngagementMetrics, GrowthMetrics, ReportData, UserManagementData } from "../adminService/Admin.Service";
 import { IAdmin } from "../adminModel/Admin.Model";
 import { TYPES } from "../../config/TYPES";
+import { IComment } from "../../models/Comment.model";
 
 @injectable()
 export class AdminProvider {
@@ -60,6 +61,10 @@ export class AdminProvider {
         totalPages: number
     }> {
         return this.adminService.getAllPosts(page, limit);
+    }
+
+    async getCommentByPost(postId: string): Promise<IComment[]>{
+        return this.adminService.getCommentByPost(postId)
     }
 
     async moderateContent(

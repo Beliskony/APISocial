@@ -6,6 +6,7 @@ import { TYPES } from "../../config/TYPES";
 import { AdminProvider } from "../adminProvider/Admin.Provider";
 import { IAdmin } from "../adminModel/Admin.Model";
 import { AdminAuthRequest } from "../adminMiddleware/Admin.Middleware";
+import mongoose from "mongoose";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
 
@@ -504,4 +505,72 @@ export class AdminController {
       });
     }
   }
+
+/**
+ * ✅ Récupérer les commentaires d'une publication
+ */
+async getCommentByPost(req: AdminAuthRequest, res: Response): Promise<void> {
+  try {
+    const { postId } = req.params;
+    const adminId = req.admin?._id.toString();
+
+    if (!adminId) {
+      res.status(401).json({ message: "Admin non authentifié" });
+      return;
+    }
+
+    // Validation de l'ID
+    if (!postId) {
+      res.status(400).json({
+        success: false,
+        message: "ID de publication requis"
+      });
+      return;
+    }
+
+    // Vérification que l'ID est un ObjectId valide
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      res.status(400).json({
+        success: false,
+        message: "ID de publication invalide"
+      });
+      return;
+    }
+
+    // Appel du provider
+    const comments = await this.adminProvider.getCommentByPost(postId);
+
+    // Réponse réussie
+    res.status(200).json({
+      success: true,
+      data: {
+        comments,
+        total: comments.length
+      },
+      message: "Commentaires récupérés avec succès"
+    });
+
+  } catch (error: any) {
+    console.error('Erreur dans getCommentByPost:', error);
+    
+    // Gestion des erreurs spécifiques
+    if (error.message.includes("ID de publication invalide")) {
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    } else if (error.message.includes("Erreur lors de la récupération")) {
+      res.status(500).json({
+        success: false,
+        message: "Erreur serveur lors de la récupération des commentaires"
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: "Erreur interne du serveur"
+      });
+    }
+  }
+}
+
 }

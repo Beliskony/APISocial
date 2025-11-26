@@ -136,6 +136,12 @@ export class AdminRouter {
             this.adminController.getAllPosts.bind(this.adminController)
         );
 
+        this.router.get(
+            "/:postId/comments",
+            adminAuthMiddleware,
+            this.adminController.getCommentByPost.bind(this.adminController)
+        )
+
         this.router.post(
             "/content/moderate",
             adminAuthMiddleware,

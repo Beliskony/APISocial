@@ -1,12 +1,12 @@
 import { injectable } from "inversify";
 import UserModel from "../../models/User.model";
 import PostModel from "../../models/Post.model";
-import CommentModel from "../../models/Comment.model";
+import CommentModel, { IComment } from "../../models/Comment.model";
 import StoryModel from "../../models/Story.model";
 import NotificationsModel from "../../models/Notifications.model";
 import AdminModel, { IAdmin } from "../adminModel/Admin.Model";
 import cloudinary from "../../config/cloudinary";
-import { Model } from "mongoose";
+import mongoose, { Model } from "mongoose";
 import { hash, compare } from "bcryptjs";
 import { Types } from "mongoose";
 
@@ -728,6 +728,31 @@ export class AdminService {
     const result = await CommentModel.findByIdAndDelete(commentId);
     if (!result) throw new Error("Commentaire introuvable");
   }
+
+  //get comment by post
+  async getCommentByPost(postId: string): Promise<IComment[]>{
+    try {
+    // Vérifier que l'ID est valide
+    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+      throw new Error("ID de publication invalide");
+    }
+
+    const commentsFind = await CommentModel.find({post: postId})
+    .populate('author', 'username profile.profilePicture')
+    .sort({createdAt: -1})
+    .exec()
+    
+    if (!commentsFind || commentsFind.length === 0) {
+      return []; // Retourner un tableau vide plutôt que de throw une erreur
+    }
+    return commentsFind;
+
+  } catch (error) {
+    console.error('Erreur lors de la récupération des commentaires:', error);
+    throw new Error("Erreur lors de la récupération des commentaires");
+  }
+  
+}
 
   // ✅ HELPER: EXTRACT CLOUDINARY PUBLIC ID
   private extractPublicIdFromUrl(url: string): string | null {
